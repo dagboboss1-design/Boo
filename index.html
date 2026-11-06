@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0A0E17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>DAGBO · Professional Trading Terminal</title>
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22DAGBO%22%2C%22short_name%22%3A%22DAGBO%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230A0E17%22%2C%22theme_color%22%3A%22%230A0E17%22%7D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: {
+        colors: { darkBg:'#0A0E17', darkSurface:'#121826', darkBorder:'#1E293B', accentGreen:'#10B981', accentRed:'#EF4444', accentBlue:'#3B82F6', accentGold:'#F59E0B' },
+        fontFamily: { sans:['Inter','sans-serif'], heading:['Sora','sans-serif'] }
+    }}
+}
+</script>
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+body{font-family:'Inter',sans-serif;background:#0A0E17;color:#F8FAFC;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+h1,h2,h3,h4,h5,h6,.font-heading{font-family:'Sora',sans-serif}
+.tabular-nums{font-variant-numeric:tabular-nums}
+.app-container{max-width:430px;margin:0 auto;min-height:100vh;background:#0A0E17;position:relative;box-shadow:0 0 50px rgba(0,0,0,0.8);display:flex;flex-direction:column}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#0A0E17}
+::-webkit-scrollbar-thumb{background:#1E293B;border-radius:4px}
+.slide-up-modal{transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.16,1,0.3,1)}
+.slide-up-modal.open{transform:translateY(0)}
+@keyframes pulse-subtle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.85;transform:scale(0.98)}}
+.pulse-btn{animation:pulse-subtle 2s infinite ease-in-out}
+</style>
+</head>
+<body class="bg-black text-slate-100 flex justify-center items-center min-h-screen">
+<div class="app-container border-x border-darkBorder flex flex-col">
+<header class="sticky top-0 z-40 bg-[#0A0E17]/90 backdrop-blur-md border-b border-darkBorder px-4 py-3 flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<span class="text-xl font-extrabold font-heading text-accentBlue tracking-wider">⚡ DAGBO</span>
+<span id="sessionClock" class="text-[9px] bg-darkSurface text-slate-400 px-2 py-0.5 rounded-full border border-darkBorder truncate max-w-[150px]">Loading...</span>
+<span id="livePill" class="hidden text-[8px] bg-accentGreen text-white px-2 py-0.5 rounded-full font-bold">LIVE</span>
+<span id="simBadge" class="hidden text-[8px] bg-accentRed text-white px-2 py-0.5 rounded-full font-bold">SIM</span>
+</div>
+<div class="flex items-center space-x-2">
+<button onclick="openNotifications()" class="relative p-2 rounded-xl bg-darkSurface border border-darkBorder text-slate-300 hover:text-white transition">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+<span id="notifBadge" class="absolute top-1 right-1 w-2 h-2 bg-accentRed rounded-full hidden"></span>
+</button>
+<button onclick="router.navigate('settings')" class="p-2 rounded-xl bg-darkSurface border border-darkBorder text-slate-300 hover:text-white transition">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+</button>
+</div>
+</header>
+<main id="appContent" class="flex-1 overflow-y-auto pb-24"></main>
+<nav class="absolute bottom-0 left-0 right-0 z-40 bg-[#0A0E17]/95 backdrop-blur-lg border-t border-darkBorder px-2 py-2 flex items-center justify-around">
+<button onclick="router.navigate('home')" id="nav-home" class="flex flex-col items-center justify-center w-16 py-1 text-slate-400"><svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg><span class="text-[10px] font-medium">Home</span></button>
+<button onclick="router.navigate('swing')" id="nav-swing" class="flex flex-col items-center justify-center w-16 py-1 text-slate-400"><svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg><span class="text-[10px] font-medium">Swing</span></button>
+<div class="relative -top-5">
+<button onclick="runScanner()" class="w-14 h-14 rounded-full bg-gradient-to-tr from-accentBlue to-indigo-600 text-white flex flex-col items-center justify-center shadow-lg shadow-blue-500/40 border-2 border-darkBg pulse-btn"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><span class="text-[9px] font-bold">SCAN</span></button>
+</div>
+<button onclick="router.navigate('spike')" id="nav-spike" class="flex flex-col items-center justify-center w-16 py-1 text-slate-400"><svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg><span class="text-[10px] font-medium">Spike</span></button>
+<button onclick="router.navigate('ai')" id="nav-ai" class="flex flex-col items-center justify-center w-16 py-1 text-slate-400"><svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg><span class="text-[10px] font-medium">AI</span></button>
+<button onclick="router.navigate('journal')" id="nav-journal" class="flex flex-col items-center justify-center w-16 py-1 text-slate-400"><svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="text-[10px] font-medium">Journal</span></button>
+</nav>
+<div id="modalOverlay" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-end transition-opacity opacity-0" onclick="closeModal()"><div id="modalContent" class="w-full max-w-[430px] bg-darkSurface border-t border-darkBorder rounded-t-3xl max-h-[90vh] overflow-y-auto p-5 slide-up-modal" onclick="event.stopPropagation()"></div></div>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+    const swCode = `self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => self.clients.claim());`;
+    const blob = new Blob([swCode], {type: 'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.log('SW failed', e));
+}
+
+const DEFAULT_TWELVE = '9b213c4f75d2427bbcd832d592b3a1f0';
+const TRADING_EXPERT_PROMPT = `You are DAGBO, an elite trading mentor. Answer ANY question about trading, ICT, SMC, risk management and market history. Be direct, accurate, and actionable.`;
+
+function esc(s) { return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+const STATE = {
+    balance: parseFloat(localStorage.getItem('dagbo_balance')) || 1000.00,
+    riskMode: localStorage.getItem('dagbo_riskMode') || 'Normal',
+    defaultRr: parseInt(localStorage.getItem('dagbo_rr')) || 2,
+    riskPct: parseFloat(localStorage.getItem('dagbo_riskPct')) || 1.0,
+    manualLot: parseFloat(localStorage.getItem('dagbo_manualLot')) || 0,
+    twelveKey: localStorage.getItem('dagbo_twelve_key') || DEFAULT_TWELVE,
+    workerUrl: localStorage.getItem('dagbo_worker_url') || 'https://dagbo-ai.YOUR-NAME.workers.dev',
+    tgToken: localStorage.getItem('dagbo_tg_token') || '',
+    tgChatId: localStorage.getItem('dagbo_tg_chat') || '',
+    soundMode: localStorage.getItem('dagbo_soundMode') || 'all',
+    voiceName: localStorage.getItem('dagbo_voiceName') || 'default',
+    autoPilot: localStorage.getItem('dagbo_autopilot') === 'true',
+    trades: JSON.parse(localStorage.getItem('dagbo_trades')) || [],
+    pendingOrders: JSON.parse(localStorage.getItem('dagbo_pending')) || [],
+    alerts: JSON.parse(localStorage.getItem('dagbo_alerts')) || [],
+    notifications: JSON.parse(localStorage.getItem('dagbo_notifs')) || [],
+    marketData: {},
+    isSimulated: false,
+    lastUpdated: Date.now(),
+    activeChat: JSON.parse(localStorage.getItem('dagbo_chat')) || [{ role: 'assistant', text: 'Hello trader! I am DAGBO AI. Ask me anything.' }],
+    propFirm: JSON.parse(localStorage.getItem('dagbo_propfirm')) || { accountSize: 1000, profitTargetPct: 10, dailyLimitPct: 5, maxDDPct: 10, peakBalance: 1000, todayStartBalance: 1000, todayDate: new Date().toDateString() },
+    spikeAlerted: JSON.parse(localStorage.getItem('dagbo_spikeAlerts')) || {}
+};
+
+const PAIRS = [
+    { symbol:'DXY', name:'Dollar Index', base:104.50, td:'DXY' },
+    { symbol:'GOLD', name:'XAU/USD', base:4061.52, td:'XAU/USD' }, 
+    { symbol:'SILVER', name:'XAG/USD', base:31.85, td:'XAG/USD' },
+    { symbol:'BTC/USD', name:'Bitcoin', base:96400, td:'BTC/USD' },
+    { symbol:'US30', name:'Dow Jones', base:43800, td:'DJI' },
+    { symbol:'NAS100', name:'Nasdaq 100', base:20500, td:'NDX' },
+    { symbol:'USOIL', name:'WTI Crude', base:71.40, td:'WTI' },
+    { symbol:'EUR/USD', name:'Euro / Dollar', base:1.0420, td:'EUR/USD' },
+    { symbol:'GBP/USD', name:'Pound / Dollar', base:1.2530, td:'GBP/USD' },
+    { symbol:'USD/JPY', name:'Dollar / Yen', base:153.10, td:'USD/JPY' },
+    { symbol:'GBP/JPY', name:'Pound / Yen', base:192.40, td:'GBP/JPY' },
+    { symbol:'AUD/USD', name:'Aussie / Dollar', base:0.6420, td:'AUD/USD' }
+];
+
+function saveState() {
+    localStorage.setItem('dagbo_balance', STATE.balance);
+    localStorage.setItem('dagbo_riskMode', STATE.riskMode);
+    localStorage.setItem('dagbo_rr', STATE.defaultRr);
+    localStorage.setItem('dagbo_riskPct', STATE.riskPct);
+    localStorage.setItem('dagbo_manualLot', STATE.manualLot);
+    localStorage.setItem('dagbo_twelve_key', STATE.twelveKey);
+    localStorage.setItem('dagbo_worker_url', STATE.workerUrl);
+    localStorage.setItem('dagbo_tg_token', STATE.tgToken);
+    localStorage.setItem('dagbo_tg_chat', STATE.tgChatId);
+    localStorage.setItem('dagbo_soundMode', STATE.soundMode);
+    localStorage.setItem('dagbo_voiceName', STATE.voiceName);
+    localStorage.setItem('dagbo_autopilot', STATE.autoPilot);
+    localStorage.setItem('dagbo_trades', JSON.stringify(STATE.trades));
+    localStorage.setItem('dagbo_pending', JSON.stringify(STATE.pendingOrders));
+    localStorage.setItem('dagbo_alerts', JSON.stringify(STATE.alerts));
+    localStorage.setItem('dagbo_notifs', JSON.stringify(STATE.notifications.slice(0, 30)));
+    localStorage.setItem('dagbo_chat', JSON.stringify(STATE.activeChat));
+    localStorage.setItem('dagbo_propfirm', JSON.stringify(STATE.propFirm));
+    localStorage.setItem('dagbo_spikeAlerts', JSON.stringify(STATE.spikeAlerted));
+}
+
+function fmtPrice(v, d = 2) { if (isNaN(v)) return '0.00'; return Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function getDecimals(s) { if (s.includes('JPY')) return 2; if (s.includes('EUR') || s.includes('GBP') || s.includes('AUD') || s.includes('USD/CHF')) return 4; return 2; }
+
+const CONTRACT_SIZES = { 'DXY': 1000, 'GOLD': 100, 'SILVER': 5000, 'BTC/USD': 1, 'US30': 1, 'NAS100': 1, 'USOIL': 1000, 'EUR/USD': 100000, 'GBP/USD': 100000, 'USD/JPY': 100000, 'GBP/JPY': 100000, 'AUD/USD': 100000 };
+const PIP_SIZES = { 'DXY': 0.01, 'GOLD': 0.10, 'SILVER': 0.01, 'BTC/USD': 1, 'US30': 1, 'NAS100': 1, 'USOIL': 0.01, 'EUR/USD': 0.0001, 'GBP/USD': 0.0001, 'USD/JPY': 0.01, 'GBP/JPY': 0.01, 'AUD/USD': 0.0001 };
+
+function getMultiplier(s) { let m = CONTRACT_SIZES[s] || 100000; if(s && s.endsWith('/JPY')) m /= (STATE.marketData['USD/JPY']?.price || 153.1); return m; }
+function getPipSize(s) { return PIP_SIZES[s] || 0.0001; }
+function getPipValue(s) { return getMultiplier(s) * getPipSize(s); }
+
+function calcAutoLot(symbol, slPips, balance, riskPct) {
+    const risk = balance * (riskPct / 100); const lots = risk / (slPips * getPipValue(symbol));
+    return Math.max(0.01, Math.round(lots * 100) / 100);
+}
+function finalLot(symbol, slPips) { if (STATE.manualLot > 0) return STATE.manualLot; return calcAutoLot(symbol, slPips, STATE.balance, STATE.riskPct); }
+
+function calcEMA(prices, period) { if(!prices || prices.length < period) return prices[0]; const k = 2/(period+1); let ema = prices[0]; for(let i=1; i<prices.length; i++) ema = prices[i]*k + ema*(1-k); return ema; }
+function calcRSI(closes, period=14) { if(closes.length < period+1) return 50; let gains=0, losses=0; for(let i=closes.length-period; i<closes.length; i++){ const diff = closes[i]-closes[i-1]; if(diff>=0) gains+=diff; else losses-=diff; } return 100 - (100 / (1 + (losses===0?100:gains/losses))); }
+function calcATR(highs, lows, closes, period=14) { if(highs.length < period+1) return (Math.max(...highs)-Math.min(...lows))/10; let trs=[]; for(let i=1; i<highs.length; i++) trs.push(Math.max(highs[i]-lows[i], Math.abs(highs[i]-closes[i-1]), Math.abs(lows[i]-closes[i-1]))); return trs.slice(-period).reduce((a,b)=>a+b,0)/period; }
+
+function pushNotif(type, title, body) {
+    STATE.notifications.unshift({ type, title: String(title), body: String(body), time: Date.now() });
+    STATE.notifications = STATE.notifications.slice(0, 30); saveState();
+    const b = document.getElementById('notifBadge'); if (b) b.classList.remove('hidden');
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification(title, { body: body, icon: 'https://cdn-icons-png.flaticon.com/512/2933/2933859.png', vibrate: [200, 100, 200] }); } catch (e) {}
+    }
+}
+
+function showToast(msg, type = 'info') {
+    const toast = document.createElement('div'); let cls = 'bg-darkSurface border-accentBlue text-white';
+    if (type === 'success') cls = 'bg-accentGreen/20 border-accentGreen text-accentGreen';
+    if (type === 'error') cls = 'bg-accentRed/20 border-accentRed text-accentRed';
+    toast.className = `fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl border ${cls} text-xs font-medium shadow-xl backdrop-blur-md animate-bounce max-w-[90%]`;
+    toast.innerText = msg; document.body.appendChild(toast); setTimeout(() => toast.remove(), 3000);
+}
+
+function vib(p = [200, 100, 200], isAlert = false) { if (STATE.soundMode === 'off') return; if (STATE.soundMode === 'alerts' && !isAlert) return; if ('vibrate' in navigator) { try { navigator.vibrate(p); } catch(e){} } }
+
+// --- VOICE CHANGER LOGIC ---
+function speak(text, isAlert = false) {
+    if (STATE.soundMode === 'off') return;
+    if (STATE.soundMode === 'alerts' && !isAlert) return;
+    if (!('speechSynthesis' in window)) return;
+    try { 
+        const u = new SpeechSynthesisUtterance(text); 
+        u.rate = 1.1; 
+        if (STATE.voiceName && STATE.voiceName !== 'default') {
+            const voices = speechSynthesis.getVoices();
+            const selected = voices.find(v => v.name === STATE.voiceName);
+            if (selected) u.voice = selected;
+        }
+        speechSynthesis.speak(u); 
+    } catch(e){}
+}
+function populateVoices() {
+    if (!('speechSynthesis' in window)) return;
+    const voices = speechSynthesis.getVoices();
+    const sel = document.getElementById('sVoice');
+    if(!sel) return;
+    sel.innerHTML = '<option value="default">Default System Voice</option>';
+    voices.forEach(v => {
+        sel.innerHTML += `<option value="${v.name}">${v.name} (${v.lang})</option>`;
+    });
+    sel.value = STATE.voiceName;
+}
+
+async function sendTg(text) { if (!STATE.tgToken || !STATE.tgChatId) return; try { await fetch(`https://api.telegram.org/bot${STATE.tgToken}/sendMessage?chat_id=${STATE.tgChatId}&text=${encodeURIComponent(text)}`); } catch(e){} }
+
+const router = {
+    current: 'home',
+    navigate(pageId, param = null, tf = null) {
+        this.current = pageId;
+        document.querySelectorAll('nav button[id^="nav-"]').forEach(b => { b.classList.remove('text-accentBlue'); b.classList.add('text-slate-400'); });
+        const a = document.getElementById(`nav-${pageId}`); if (a) { a.classList.remove('text-slate-400'); a.classList.add('text-accentBlue'); }
+        const c = document.getElementById('appContent'); c.scrollTop = 0;
+        if (pageId === 'home') renderHome(c); else if (pageId === 'swing') renderSwing(c, param, tf);
+        else if (pageId === 'spike') renderSpike(c); else if (pageId === 'ai') renderAI(c);
+        else if (pageId === 'journal') renderJournal(c); else if (pageId === 'settings') renderSettings(c);
+    }
+};
+
+function updateClock() {
+    const n = new Date(); 
+    const localH = n.getHours(), localM = String(n.getMinutes()).padStart(2,'0');
+    const h = n.getUTCHours(), m = String(n.getUTCMinutes()).padStart(2,'0');
+    let session = 'Asian';
+    if (h >= 7 && h < 13) session = 'London';
+    else if (h >= 13 && h < 21) session = 'New York';
+    else if (h >= 21 || h < 7) session = 'Sydney';
+    const el = document.getElementById('sessionClock'); 
+    if (el) el.innerText = `${session} | L: ${localH}:${localM} | GMT: ${h}:${m}`;
+}
+setInterval(updateClock, 1000); updateClock();
+
+function checkAutoBackup() {
+    const last = localStorage.getItem('dagbo_last_backup') || 0;
+    if (Date.now() - last > 86400000) {
+        localStorage.setItem('dagbo_last_backup', Date.now());
+        exportBackup(true);
+        pushNotif('alert', 'Auto Backup', 'Daily backup file downloaded.');
+    }
+}
+setInterval(checkAutoBackup, 3600000);
+
+function updateHomePrices() {
+    if (router.current !== 'home') return;
+    PAIRS.forEach(p => {
+        const d = STATE.marketData[p.symbol]; if (!d) return;
+        const dec = getDecimals(p.symbol);
+        const px = document.querySelector(`[data-px="${p.symbol}"]`);
+        const ch = document.querySelector(`[data-chg="${p.symbol}"]`);
+        if (px) px.textContent = '$' + fmtPrice(d.price, dec);
+        if (ch) { 
+            ch.textContent = (d.change >= 0 ? '+' : '') + d.change + '%';
+            ch.className = 'text-[11px] font-semibold ' + (d.change >= 0 ? 'text-accentGreen' : 'text-accentRed');
+        }
+    });
+}
+
+async function fetchPrices(force = false) {
+    const now = Date.now();
+    if (!force && now - STATE.lastUpdated < 300000) return;
+
+    if (!STATE.twelveKey) { simulatePrices(); STATE.isSimulated = true; updateSimBadge(); return; }
+    try {
+        const tdSymbols = PAIRS.map(p => p.td).join(',');
+        const r = await fetch(`https://api.twelvedata.com/quote?symbol=${tdSymbols}&apikey=${STATE.twelveKey}`);
+        const data = await r.json();
+        
+        if (data.code === 429 || data.status === "error") throw new Error("Rate Limit");
+        
+        STATE.isSimulated = false; STATE.lastUpdated = Date.now(); updateSimBadge();
+        
+        PAIRS.forEach(p => {
+            const q = data[p.td];
+            if (q && q.close) {
+                const price = parseFloat(q.close);
+                const change = parseFloat(q.percent_change || 0);
+                if (!STATE.marketData[p.symbol]) STATE.marketData[p.symbol] = { sparkline: [] };
+                STATE.marketData[p.symbol].price = price;
+                STATE.marketData[p.symbol].change = change;
+                STATE.marketData[p.symbol].sparkline.push(price);
+                if (STATE.marketData[p.symbol].sparkline.length > 30) STATE.marketData[p.symbol].sparkline.shift();
+            }
+        });
+    } catch(e) {
+        STATE.isSimulated = true; updateSimBadge(); simulatePrices();
+    }
+    checkAlerts();
+    checkPendingOrders();
+    updateHomePrices();
+}
+
+function simulatePrices() {
+    let gold = STATE.marketData['GOLD']?.price || 4061.52;
+    for (const p of PAIRS) {
+        const base = p.symbol === 'GOLD' ? gold : p.base;
+        const cur = STATE.marketData[p.symbol]?.price || base;
+        const delta = (Math.random() - 0.49) * (base * 0.0004);
+        const newP = p.symbol === 'GOLD' ? gold + (Math.random() - 0.5) * 2 : cur + delta;
+        if (!STATE.marketData[p.symbol]) STATE.marketData[p.symbol] = { sparkline: [] };
+        STATE.marketData[p.symbol].price = newP;
+        STATE.marketData[p.symbol].change = parseFloat((((newP - base) / base) * 100).toFixed(2));
+        STATE.marketData[p.symbol].sparkline.push(newP);
+        if (STATE.marketData[p.symbol].sparkline.length > 30) STATE.marketData[p.symbol].sparkline.shift();
+    }
+    STATE.lastUpdated = Date.now();
+    updateHomePrices();
+}
+
+function updateSimBadge() {
+    document.getElementById('simBadge')?.classList.toggle('hidden', !STATE.isSimulated);
+    document.getElementById('livePill')?.classList.toggle('hidden', STATE.isSimulated);
+}
+
+setInterval(() => fetchPrices(false), 300000);
+fetchPrices(true);
+
+// --- PENDING ORDERS LOGIC ---
+function checkPendingOrders() {
+    let triggered = false;
+    STATE.pendingOrders.forEach((o, idx) => {
+        if (o.status !== 'PENDING') return;
+        const cur = STATE.marketData[o.symbol]?.price;
+        if (!cur) return;
+        let hit = false;
+        if (o.type === 'BUY LIMIT' && cur <= o.orderPrice) hit = true;
+        if (o.type === 'SELL LIMIT' && cur >= o.orderPrice) hit = true;
+        if (o.type === 'BUY STOP' && cur >= o.orderPrice) hit = true;
+        if (o.type === 'SELL STOP' && cur <= o.orderPrice) hit = true;
+
+        if (hit) {
+            STATE.trades.unshift({ id: Date.now(), symbol: o.symbol, type: o.type.includes('BUY') ? 'BUY' : 'SELL', entry: o.orderPrice, sl: o.sl, tp: o.tp, lots: o.lots, tf: '15M', rrRatio: '1:2', pnl: 0, status: 'OPEN', time: new Date().toISOString(), risk0: Math.abs(o.orderPrice - o.sl), partialClosed: false, partialPnl: 0, note: 'Pending Order', emotion: 'Confident' });
+            STATE.pendingOrders.splice(idx, 1);
+            triggered = true;
+            showToast(`🚀 Pending Order Triggered: ${o.type} ${o.symbol}`, 'success');
+            pushNotif('trade', 'Pending Order Hit', `${o.type} ${o.symbol} opened at $${fmtPrice(cur)}`);
+            speak(`Pending order executed on ${o.symbol}`, true);
+        }
+    });
+    if (triggered) { saveState(); if (router.current === 'journal') renderJournal(document.getElementById('appContent')); }
+}
+setInterval(checkPendingOrders, 3000); // Fast check for pending orders
+
+function checkAlerts() {
+    for (let i = STATE.alerts.length - 1; i >= 0; i--) {
+        const a = STATE.alerts[i], d = STATE.marketData[a.symbol];
+        if (!d) continue;
+        let hit = false;
+        if (a.condition === 'above' && d.price >= a.target) { showToast(`🚨 ${a.symbol} reached ${fmtPrice(a.target)}!`, 'success'); sendTg(`🚨 ${a.symbol} hit ${fmtPrice(a.target)}`); pushNotif('alert', `${a.symbol} above`, `Reached ${fmtPrice(a.target)}`); hit = true; }
+        else if (a.condition === 'below' && d.price <= a.target) { showToast(`🚨 ${a.symbol} dropped to ${fmtPrice(a.target)}!`, 'success'); sendTg(`🚨 ${a.symbol} dropped to ${fmtPrice(a.target)}`); pushNotif('alert', `${a.symbol} below`, `Dropped to ${fmtPrice(a.target)}`); hit = true; }
+        if (hit) { vib([300,100,300], true); speak(`${a.symbol} alert`, true); STATE.alerts.splice(i, 1); saveState(); }
+    }
+    
+    let updated = false;
+    STATE.trades.forEach(t => {
+        if (t.status !== 'OPEN') return;
+        const cur = STATE.marketData[t.symbol]?.price || t.entry;
+        const profit = t.type === 'BUY' ? (cur - t.entry) : (t.entry - cur);
+        const mult = getMultiplier(t.symbol);
+        const riskDist = t.risk0 || Math.abs(t.entry - t.sl);
+        
+        t.pnl = (profit * t.lots * mult) + (t.partialPnl || 0);
+
+        if (!t.partialClosed && profit >= riskDist) {
+            t.partialClosed = true;
+            const partialLots = Math.floor((t.lots / 2) * 100) / 100;
+            if (partialLots > 0) {
+                const partialPnl = profit * partialLots * mult;
+                STATE.balance += partialPnl;
+                t.lots -= partialLots;
+                t.partialPnl = (t.partialPnl || 0) + partialPnl;
+                saveState();
+                showToast(`💰 Partial Close 50% on ${t.symbol}! +$${fmtPrice(partialPnl)}`, 'success');
+                pushNotif('win', 'Partial Close', `Closed 50% of ${t.symbol} for +$${fmtPrice(partialPnl)}.`);
+                sendTg(`💰 PARTIAL CLOSE: 50% of ${t.symbol} hit 1:1. +$${fmtPrice(partialPnl)}`);
+            }
+        }
+
+        if (t.partialClosed) {
+            const spark = STATE.marketData[t.symbol]?.sparkline || [cur, cur, cur];
+            const atr = calcATR(spark, spark, spark);
+            const trailDist = atr * 1.5;
+            if (t.type === 'BUY') { const nsl = cur - trailDist; if (nsl > t.sl) { t.sl = nsl; saveState(); } } 
+            else { const nsl = cur + trailDist; if (nsl < t.sl) { t.sl = nsl; saveState(); } }
+        }
+
+        const hitTp = t.type === 'BUY' ? cur >= t.tp : cur <= t.tp;
+        const hitSl = t.type === 'BUY' ? cur <= t.sl : cur >= t.sl;
+        
+        if (hitTp) {
+            t.status = 'TP HIT'; 
+            const realized = profit * t.lots * mult; 
+            STATE.balance += realized; updated = true;
+            showToast(`🎯 TP HIT ${t.symbol}! +$${fmtPrice(realized)}`, 'success'); 
+            vib([300,100,300], true); speak(`Take profit hit on ${t.symbol}`, true); 
+            sendTg(`🎯 WON: ${t.symbol} ${t.type} TP!`); pushNotif('win', `TP HIT ${t.symbol}`, `+$${fmtPrice(realized)}`);
+        } else if (hitSl) {
+            const realized = (t.type === 'BUY' ? t.sl - t.entry : t.entry - t.sl) * t.lots * mult;
+            STATE.balance += realized; 
+            t.pnl = realized + (t.partialPnl || 0); 
+            t.status = t.pnl >= 0 ? 'CLOSED +' : 'SL HIT'; 
+            updated = true;
+            if (t.pnl >= 0) { showToast(`✅ Trailing SL closed ${t.symbol} in profit +$${fmtPrice(t.pnl)}`, 'success'); pushNotif('win', `Trailing SL ${t.symbol}`, `+$${fmtPrice(t.pnl)}`); sendTg(`✅ TRAIL WIN: ${t.symbol} closed +$${fmtPrice(t.pnl)}`); }
+            else { showToast(`❌ SL HIT ${t.symbol}`, 'error'); vib([500], true); speak(`Stop loss on ${t.symbol}`, true); sendTg(`❌ LOST: ${t.symbol} ${t.type} SL.`); pushNotif('loss', `SL HIT ${t.symbol}`, `-$${fmtPrice(Math.abs(realized))}`); }
+        }
+    });
+    if (updated) { saveState(); if (router.current === 'journal') renderJournal(document.getElementById('appContent')); }
+}
+
+setInterval(async () => {
+    const events = await fetchNews() || fallbackEvents();
+    const now = Date.now();
+    for (let ev of events) {
+        if (ev.impact !== 'High') continue;
+        const timeUntil = ev.date.getTime() - now;
+        const keyPre = ev.title + '_pre'; const keyPost = ev.title + '_post';
+
+        if (timeUntil <= 15 * 60000 && timeUntil > 5 * 60000 && !STATE.spikeAlerted[keyPre]) {
+            STATE.spikeAlerted[keyPre] = true; saveState(); generatePreSpikeSignal(ev);
+        }
+        if (timeUntil <= -5 * 60000 && timeUntil > -15 * 60000 && !STATE.spikeAlerted[keyPost]) {
+            STATE.spikeAlerted[keyPost] = true; saveState(); generatePostSpikeSignal(ev);
+        }
+    }
+}, 60000);
+
+async function generatePreSpikeSignal(ev) {
+    showToast(`⚡ 15m to ${ev.title}! Calculating Spike...`, 'info');
+    vib([500, 200, 500], true); speak(`15 minutes to ${ev.title}.`, true);
+    const dxy = STATE.marketData['DXY']; const gold = STATE.marketData['GOLD'];
+    if(dxy && gold && dxy.sparkline && gold.sparkline) {
+        const dxyLast30 = dxy.sparkline.slice(-30); const goldLast30 = gold.sparkline.slice(-30);
+        const dxyChange = dxyLast30.length > 1 ? dxyLast30[dxyLast30.length-1] - dxyLast30[0] : 0;
+        const goldChange = goldLast30.length > 1 ? goldLast30[goldLast30.length-1] - goldLast30[0] : 0;
+        let sigType = 'BUY'; let reason = 'DXY weakening + Gold momentum up.';
+        if(dxyChange > 0 && goldChange < 0) { sigType = 'SELL'; reason = 'DXY strengthening + Gold momentum down.'; }
+        else if(dxyChange > 0 && goldChange > 0) { sigType = 'BUY'; reason = 'DXY strong but Gold ignoring. Bullish divergence.'; }
+        const price = gold.price; const sl = sigType === 'BUY' ? price - 5 : price + 5; const tp = sigType === 'BUY' ? price + 10 : price - 10;
+        renderSignalCard({signal:sigType, symbol:'GOLD', timeframe:'5M', confidence:78, reasoning:reason, entry:price, stopLoss:sl, takeProfit:tp, strategy:'DXY 30m Correlation', pattern:'Spike Pre-Entry', indicators:'DXY + XAU 30m'}, true);
+        return;
+    }
+    const sys = `You are DAGBO Spike AI. News in 15 mins: ${ev.title}. Output ONLY JSON: {"signal":"BUY","symbol":"GOLD","confidence":85,"reasoning":"...","entry":4061,"stopLoss":4051,"takeProfit":4081,"strategy":"DXY","pattern":"FVG","indicators":"RSI"}`;
+    try { const reply = await aiCall(sys, 'Generate Spike Signal.', false); const sig = JSON.parse(reply.match(/\{[\s\S]*\}/)[0]); renderSignalCard(sig, true); } catch(e) { showToast('Could not calculate spike.', 'error'); }
+}
+
+async function generatePostSpikeSignal(ev) {
+    showToast(`🌊 ${ev.title} released! Generating Retest...`, 'info');
+    vib([300, 100, 300], true);
+    const gold = STATE.marketData['GOLD'];
+    if(gold) {
+        const price = gold.price;
+        renderSignalCard({signal:'BUY', symbol:'GOLD', timeframe:'15M', confidence:75, reasoning:'News just released. Wait for price to pull back to the broken level (FVG), then enter in the direction of the news.', entry:price, stopLoss:price-8, takeProfit:price+16, strategy:'FVG Retest', pattern:'Break & Retest', indicators:'Volume'}, false, true);
+        return;
+    }
+}
+
+function analyzeTF(symbol, tf) {
+    const data = STATE.marketData[symbol];
+    if (!data || !data.sparkline || data.sparkline.length < 5) return null;
+    const spark = data.sparkline; const price = data.price;
+    const range = (Math.max(...spark) - Math.min(...spark)) / price;
+    const tfWeight = { '5M': 1.0, '15M': 1.2, '1H': 1.5, '4H': 1.8, '1D': 2.0 }[tf];
+    const ema50 = calcEMA(spark, Math.min(spark.length, 10)); const rsi = calcRSI(spark);
+    const trendScore = (price > ema50) ? 40 : 0; const volScore = Math.min(range * 8000, 30); const rsiScore = (rsi > 50 && rsi < 70) ? 20 : (rsi < 50 && rsi > 30) ? 20 : 0;
+    const rawScore = (volScore + trendScore + rsiScore) * tfWeight; const direction = price > ema50 ? 'BUY' : 'SELL';
+    const confidence = Math.min(99, Math.round(35 + Math.abs(rsi - 50) * 1.5 + (range * 1000)));
+    return { score: rawScore, direction, volatility: range, trendStrength: trendScore/40, confidence };
+}
+function slPipsForTf(tf, symbol) {
+    const base = (symbol === 'BTC/USD') ? 100 : (symbol === 'US30' || symbol === 'NAS100') ? 50 : (symbol === 'GOLD') ? 5 : 1;
+    const t = { '5M': 15, '15M': 30, '1H': 60, '4H': 120, '1D': 250 }[tf];
+    return t * base; 
+}
+function runAutoScan() {
+    const tfs = ['5M', '15M', '1H', '4H', '1D']; const results = [];
+    for (const pair of PAIRS) { for (const tf of tfs) { const a = analyzeTF(pair.symbol, tf); if (a && a.score > 0) results.push({ symbol: pair.symbol, pairName: pair.name, tf, ...a }); } }
+    results.sort((a, b) => b.score - a.score); return results.slice(0, 5);
+}
+function runScanner() {
+    vib([100, 50, 100]);
+    openModal(`<div class="space-y-4 py-8 text-center"><div class="text-6xl animate-spin inline-block" style="animation-duration:1.5s">⚡</div><div class="font-heading font-bold text-sm text-white">Scanning...</div></div>`);
+    setTimeout(() => { const results = runAutoScan(); if (!results.length) { closeModal(); showToast('No setups found', 'error'); return; } renderScanResults(results); }, 1600);
+}
+function renderScanResults(results) {
+    const top = results[0];
+    openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">⚡ Scanner Results</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div>
+        <div class="rounded-2xl bg-gradient-to-br from-accentGreen/20 to-darkSurface border-2 border-accentGreen/40 p-4 space-y-2"><div class="flex justify-between items-center"><span class="text-[10px] font-bold uppercase text-accentGreen">🏆 #1 Best Setup</span><span class="text-[10px] bg-accentGreen/30 text-accentGreen px-2 py-0.5 rounded-full font-bold">${top.confidence}% conf</span></div><div class="text-lg font-extrabold text-white">${top.symbol} <span class="text-xs text-slate-400">${top.tf}</span></div><div class="flex justify-between text-[11px] text-slate-300"><span class="font-bold ${top.direction === 'BUY' ? 'text-accentGreen' : 'text-accentRed'}">${top.direction}</span><span>Vol ${(top.volatility*100).toFixed(2)}%</span></div></div>
+        <div class="space-y-2">${results.slice(1).map(r => `<button onclick='openScanPlan(${JSON.stringify(r).replace(/'/g, "&#39;")})' class="w-full text-left rounded-2xl bg-darkSurface border border-darkBorder p-3"><div class="flex justify-between items-center"><div><span class="text-sm font-bold text-white">${r.symbol}</span><span class="text-[10px] text-accentBlue ml-1">${r.tf}</span><span class="ml-2 text-[10px] font-bold ${r.direction === 'BUY' ? 'text-accentGreen' : 'text-accentRed'}">${r.direction}</span></div><span class="text-[10px] text-accentGreen font-bold">${r.confidence}%</span></div></button>`).join('')}</div>
+        <button onclick='openScanPlan(${JSON.stringify(top).replace(/'/g, "&#39;")})' class="w-full py-3 rounded-2xl bg-gradient-to-r from-accentGreen to-emerald-600 text-white font-extrabold text-xs">🎯 View #1 Trade Plan</button></div>`);
+}
+function openScanPlan(r) {
+    const price = STATE.marketData[r.symbol]?.price || 0; 
+    const slPips = slPipsForTf(r.tf, r.symbol); 
+    const slDist = slPips * getPipSize(r.symbol);
+    const sl = r.direction === 'BUY' ? price - slDist : price + slDist; 
+    const tp = r.direction === 'BUY' ? price + slDist * STATE.defaultRr : price - slDist * STATE.defaultRr;
+    const lot = finalLot(r.symbol, slPips);
+    const dec = getDecimals(r.symbol);
+    
+    openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">${r.symbol} · ${r.tf}</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div><div class="rounded-2xl bg-darkBg border border-darkBorder p-4 space-y-2 text-xs"><div class="flex justify-between"><span class="text-slate-400">Direction</span><span class="font-bold ${r.direction === 'BUY' ? 'text-accentGreen' : 'text-accentRed'}">${r.direction}</span></div><div class="flex justify-between"><span class="text-slate-400">Entry</span><span class="text-white font-bold">$${fmtPrice(price, dec)}</span></div><div class="flex justify-between"><span class="text-slate-400">SL</span><span class="text-accentRed font-bold">$${fmtPrice(sl, dec)}</span></div><div class="flex justify-between"><span class="text-slate-400">TP</span><span class="text-accentGreen font-bold">$${fmtPrice(tp, dec)}</span></div><div class="flex justify-between"><span class="text-slate-400">Lot</span><span class="text-accentBlue font-bold">${lot.toFixed(2)}</span></div></div>
+        <div class="flex space-x-2">
+            <button onclick="openPendingOrderModal('${r.symbol}', '${r.direction}', ${price}, ${sl}, ${tp}, ${lot})" class="flex-1 py-3.5 rounded-2xl bg-darkSurface border border-accentBlue text-accentBlue font-extrabold text-xs">⏳ Pending</button>
+            <button onclick="openChecklist('${r.symbol}','${r.direction}',${price},${sl},${tp},${lot},'${r.tf}')" class="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-accentGreen to-emerald-600 text-white font-extrabold text-xs">🚀 Market</button>
+        </div></div>`);
+}
+
+// --- PENDING ORDERS UI ---
+function openPendingOrderModal(sym, dir, price, sl, tp, lot) {
+    const dec = getDecimals(sym);
+    openModal(`<div class="space-y-4">
+        <div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">Set Pending Order</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div>
+        <div class="rounded-2xl bg-darkBg border border-darkBorder p-4 space-y-2 text-xs">
+            <div class="flex justify-between"><span class="text-slate-400">Symbol</span><span class="text-white font-bold">${sym}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Current Price</span><span class="text-white font-bold">$${fmtPrice(price, dec)}</span></div>
+        </div>
+        <div>
+            <label class="text-[10px] text-slate-400 block mb-1">Order Type</label>
+            <select id="pType" class="w-full bg-darkBg text-white text-xs px-3 py-2.5 rounded-xl border border-darkBorder">
+                <option value="BUY LIMIT">BUY LIMIT (Buy below current price)</option>
+                <option value="SELL LIMIT">SELL LIMIT (Sell above current price)</option>
+                <option value="BUY STOP">BUY STOP (Buy breakout above price)</option>
+                <option value="SELL STOP">SELL STOP (Sell breakdown below price)</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-[10px] text-slate-400 block mb-1">Trigger Price</label>
+            <input type="number" id="pPrice" value="${fmtPrice(price, dec)}" step="0.01" class="w-full bg-darkBg text-white text-xs px-3 py-2.5 rounded-xl border border-darkBorder">
+        </div>
+        <button onclick="savePendingOrder('${sym}', ${sl}, ${tp}, ${lot})" class="w-full py-3 rounded-2xl bg-accentBlue text-white font-bold text-sm">Set Pending Order</button>
+    </div>`);
+}
+
+function savePendingOrder(sym, sl, tp, lot) {
+    const type = document.getElementById('pType').value;
+    const orderPrice = parseFloat(document.getElementById('pPrice').value);
+    if (!orderPrice) { showToast('Enter a valid price', 'error'); return; }
+    
+    STATE.pendingOrders.push({ id: Date.now(), symbol: sym, type: type, orderPrice: orderPrice, sl: sl, tp: tp, lots: lot, status: 'PENDING' });
+    saveState(); closeModal();
+    showToast(`Pending Order Set: ${type} at $${orderPrice}`, 'success');
+}
+
+function openNotifications() {
+    document.getElementById('notifBadge')?.classList.add('hidden'); const list = STATE.notifications.slice(0, 20);
+    openModal(`<div class="space-y-3"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">🔔 Notifications</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div>${list.length === 0 ? `<div class="text-center py-8 text-slate-500 text-xs">No notifications yet</div>` : list.map(n => `<div class="rounded-xl bg-darkBg border border-darkBorder p-3 space-y-1"><div class="flex justify-between items-center"><span class="text-[11px] font-bold text-white">${esc(n.title)}</span><span class="text-[9px] text-slate-500">${new Date(n.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div><div class="text-[10px] ${n.type === 'win' ? 'text-accentGreen' : n.type === 'loss' ? 'text-accentRed' : 'text-slate-300'}">${esc(n.body)}</div></div>`).join('')}${list.length > 0 ? `<button onclick="clearNotifs()" class="w-full py-2 rounded-xl bg-darkBg border border-accentRed/30 text-accentRed text-[10px] font-bold">Clear All</button>` : ''}</div>`);
+}
+function clearNotifs() { STATE.notifications = []; saveState(); closeModal(); showToast('Notifications cleared', 'success'); }
+
+function renderPropFirm() {
+    const floating = STATE.trades.filter(t => t.status === 'OPEN').reduce((a, t) => a + (t.pnl || 0), 0);
+    const pf = STATE.propFirm, cur = STATE.balance + floating, today = new Date().toDateString();
+    if (pf.todayDate !== today) { pf.todayDate = today; pf.todayStartBalance = cur; saveState(); }
+    if (cur > pf.peakBalance) { pf.peakBalance = cur; saveState(); }
+    const target = pf.accountSize * (1 + pf.profitTargetPct / 100); const tp = Math.min(100, Math.max(0, ((cur - pf.accountSize) / (target - pf.accountSize)) * 100));
+    const pnl = cur - pf.todayStartBalance; const dLimit = pf.accountSize * (pf.dailyLimitPct / 100); const du = Math.min(100, (Math.abs(Math.min(0, pnl)) / dLimit) * 100);
+    const dd = pf.peakBalance - cur; const maxDD = pf.accountSize * (pf.maxDDPct / 100); const ddu = Math.min(100, (dd / maxDD) * 100);
+    return `<div class="rounded-2xl bg-darkSurface border border-darkBorder p-4 space-y-2" onclick="openPropFirmModal()"><div class="flex justify-between items-center"><span class="text-[10px] font-bold uppercase text-accentBlue">🎯 Prop Firm</span><span class="text-[10px] text-slate-400">$${pf.accountSize.toLocaleString()}</span></div><div class="space-y-1.5"><div><div class="flex justify-between text-[10px] mb-0.5"><span class="text-slate-400">Target ${pf.profitTargetPct}%</span><span class="text-accentGreen font-bold">${tp.toFixed(0)}%</span></div><div class="h-1.5 rounded-full bg-darkBg overflow-hidden"><div class="h-full bg-accentGreen" style="width:${tp}%"></div></div></div><div><div class="flex justify-between text-[10px] mb-0.5"><span class="text-slate-400">Daily ${pf.dailyLimitPct}%</span><span class="${du>70?'text-accentRed':'text-accentGold'} font-bold">${du.toFixed(0)}%</span></div><div class="h-1.5 rounded-full bg-darkBg overflow-hidden"><div class="h-full ${du>70?'bg-accentRed':'bg-accentGold'}" style="width:${du}%"></div></div></div><div><div class="flex justify-between text-[10px] mb-0.5"><span class="text-slate-400">MaxDD ${pf.maxDDPct}%</span><span class="${ddu>70?'text-accentRed':'text-accentBlue'} font-bold">${ddu.toFixed(0)}%</span></div><div class="h-1.5 rounded-full bg-darkBg overflow-hidden"><div class="h-full ${ddu>70?'bg-accentRed':'bg-accentBlue'}" style="width:${ddu}%"></div></div></div></div></div>`;
+}
+function openPropFirmModal() {
+    const floating = STATE.trades.filter(t => t.status === 'OPEN').reduce((a, t) => a + (t.pnl || 0), 0);
+    const pf = STATE.propFirm, cur = STATE.balance + floating;
+    openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">Prop Firm Tracker</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div><div class="rounded-2xl bg-darkBg border border-darkBorder p-4 space-y-2 text-xs"><div class="flex justify-between"><span class="text-slate-400">Account Size</span><strong class="text-white">$${pf.accountSize.toLocaleString()}</strong></div><div class="flex justify-between"><span class="text-slate-400">Equity (incl. open)</span><strong class="${floating >= 0 ? 'text-accentGreen' : 'text-accentRed'}">$${fmtPrice(cur)}</strong></div><div class="flex justify-between"><span class="text-slate-400">Peak</span><strong class="text-accentGreen">$${fmtPrice(pf.peakBalance)}</strong></div><div class="flex justify-between"><span class="text-slate-400">Target</span><strong class="text-accentGreen">${pf.profitTargetPct}%</strong></div><div class="flex justify-between"><span class="text-slate-400">Daily Limit</span><strong class="text-accentGold">${pf.dailyLimitPct}%</strong></div><div class="flex justify-between"><span class="text-slate-400">Max DD</span><strong class="text-accentRed">${pf.maxDDPct}%</strong></div></div><button onclick="closeModal(); router.navigate('settings');" class="w-full py-2.5 rounded-xl bg-darkBg border border-darkBorder text-slate-300 font-bold text-xs">Edit in Settings</button></div>`);
+}
+
+function sparkSvg(pts, color) {
+    if (!pts || pts.length < 2) return '';
+    const min = Math.min(...pts), max = Math.max(...pts), range = max - min || 1, w = 64, h = 24;
+    const coords = pts.map((v, i) => `${((i/(pts.length-1))*w).toFixed(1)},${(h - ((v-min)/range)*h).toFixed(1)}`).join(' ');
+    return `<svg class="w-16 h-6 overflow-visible" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${coords}"/></svg>`;
+}
+
+function renderHome(c) {
+    const timeSince = Math.round((Date.now() - STATE.lastUpdated) / 1000);
+    const updateStr = timeSince < 60 ? `${timeSince}s ago` : `${Math.floor(timeSince/60)}m ago`;
+
+    c.innerHTML = `<div class="p-4 space-y-4">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900/40 via-darkSurface to-darkSurface border border-darkBorder p-6 shadow-2xl"><div class="flex justify-between items-start mb-2"><span class="text-xs font-semibold uppercase text-slate-400">Virtual Balance</span><span class="text-[10px] bg-accentGreen/10 text-accentGreen border border-accentGreen/30 px-2 py-0.5 rounded-full">Live PnL</span></div><div class="text-3xl sm:text-4xl font-extrabold font-heading tabular-nums text-white mb-4">$${fmtPrice(STATE.balance)}</div><div class="grid grid-cols-3 gap-2 pt-3 border-t border-darkBorder/60"><button onclick="router.navigate('swing')" class="flex flex-col items-center py-2 rounded-xl bg-darkBg/60 border border-darkBorder"><span class="text-accentBlue font-bold text-sm">Swing</span><span class="text-[10px] text-slate-400">Setup</span></button><button onclick="router.navigate('spike')" class="flex flex-col items-center py-2 rounded-xl bg-darkBg/60 border border-darkBorder"><span class="text-accentGold font-bold text-sm">Spike</span><span class="text-[10px] text-slate-400">News</span></button><button onclick="router.navigate('ai')" class="flex flex-col items-center py-2 rounded-xl bg-darkBg/60 border border-darkBorder"><span class="text-indigo-400 font-bold text-sm">AI</span><span class="text-[10px] text-slate-400">Expert</span></button></div></div>
+        ${renderPropFirm()}
+        <button onclick="runScanner()" class="w-full rounded-2xl bg-gradient-to-r from-accentBlue to-indigo-600 text-white p-4 flex items-center justify-between shadow-lg shadow-blue-500/30"><div class="text-left"><div class="text-xs font-bold uppercase tracking-wider">⚡ Auto Scanner</div><div class="text-[10px] text-white/80 mt-0.5">Find the best pair + timeframe now</div></div><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></button>
+        <div class="flex justify-between items-center"><h2 class="font-heading font-bold text-sm text-slate-200 uppercase">Markets <span class="text-[9px] text-slate-500 font-normal ml-1">Updated ${updateStr}</span></h2><button onclick="fetchPrices(true)" class="text-xs text-accentBlue font-medium">↻ Refresh</button></div>
+        <div class="grid grid-cols-1 gap-2.5">${PAIRS.map(p => {
+            const d = STATE.marketData[p.symbol] || { price: 0, change: 0, sparkline: [0,0,0,0,0,0,0,0,0,0] };
+            const pos = d.change >= 0; const dec = getDecimals(p.symbol);
+            return `<div onclick="router.navigate('swing', '${p.symbol}')" class="flex items-center justify-between p-3.5 rounded-2xl bg-darkSurface border border-darkBorder cursor-pointer"><div class="flex items-center space-x-3"><div class="w-10 h-10 rounded-xl bg-darkBg border border-darkBorder flex items-center justify-center font-bold text-xs text-slate-200">${p.symbol.split('/')[0].slice(0,3)}</div><div><div class="font-bold text-sm text-white">${p.symbol}</div><div class="text-[10px] text-slate-400">${p.name}</div></div></div><div class="flex items-center space-x-3"><div class="w-16 h-7 flex items-center justify-end">${sparkSvg(d.sparkline, pos ? '#10B981' : '#EF4444')}</div><div class="text-right"><div class="font-heading font-bold text-sm tabular-nums text-white" data-px="${p.symbol}">$${fmtPrice(d.price, dec)}</div><div class="text-[11px] font-semibold ${pos ? 'text-accentGreen' : 'text-accentRed'}" data-chg="${p.symbol}">${pos ? '+' : ''}${d.change}%</div></div></div></div>`;
+        }).join('')}</div></div>`;
+}
+
+function renderSwing(c, selected = 'GOLD', tf = '15M') {
+    const d = STATE.marketData[selected];
+    if(!d || !d.sparkline || d.sparkline.length < 10){
+        c.innerHTML = `<div class="p-4 space-y-3"><div class="rounded-3xl bg-darkSurface border border-darkBorder p-6 text-center"><div class="text-lg font-bold">⏸️ NO TRADE</div><p class="text-xs text-slate-400 mt-2">Waiting for real candle data for ${esc(selected)} ${esc(tf)}.<br>Tick snapshots are not enough for EMA/RSI/ATR.</p><button onclick="fetchPrices(true)" class="mt-4 px-4 py-2 rounded-xl bg-accentBlue text-white text-xs font-bold">Refresh Data</button></div></div>`;
+        return;
+    }
+    
+    const pair = PAIRS.find(p => p.symbol === selected) || PAIRS[0]; const data = STATE.marketData[pair.symbol] || { price: 4061 }; const price = data.price;
+    const spark = data.sparkline || [price, price, price, price, price]; const atr = calcATR(spark, spark, spark);
+    const ema = calcEMA(spark, Math.min(spark.length, 10)); const rsi = calcRSI(spark);
+    
+    let patternMsg = 'None Detected';
+    let pColor = 'text-slate-400';
+    let sigType = (price > ema && rsi < 70) ? 'BUY' : (price < ema && rsi > 30) ? 'SELL' : (Math.random() > 0.5 ? 'BUY' : 'SELL');
+
+    const c1 = spark[spark.length - 3] || price;
+    const c2 = spark[spark.length - 2] || price;
+    const c3 = spark[spark.length - 1] || price;
+
+    if (c1 < c2 && c3 > c2) { patternMsg = 'Bullish Momentum'; pColor = 'text-accentGreen'; sigType = 'BUY'; }
+    else if (c1 > c2 && c3 < c2) { patternMsg = 'Bearish Momentum'; pColor = 'text-accentRed'; sigType = 'SELL'; }
+    else if (Math.abs(c3 - price) < price * 0.0005 && data.change > 0) { patternMsg = 'Bullish Pin Bar'; pColor = 'text-accentGreen'; }
+    else if (Math.abs(c3 - price) < price * 0.0005 && data.change < 0) { patternMsg = 'Bearish Pin Bar'; pColor = 'text-accentRed'; }
+
+    const slDist = atr * 1.5;
+    const sl = sigType === 'BUY' ? price - slDist : price + slDist; 
+    const tp = sigType === 'BUY' ? price + slDist * STATE.defaultRr : price - slDist * STATE.defaultRr;
+    const autoLot = calcAutoLot(pair.symbol, slDist/getPipSize(pair.symbol), STATE.balance, STATE.riskPct); const final = finalLot(pair.symbol, slDist/getPipSize(pair.symbol));
+    const dec = getDecimals(pair.symbol);
+
+    c.innerHTML = `<div class="p-4 space-y-3">
+        <div class="flex items-center justify-between bg-darkSurface p-3 rounded-2xl border border-darkBorder"><select onchange="router.navigate('swing', this.value, '${tf}')" class="bg-darkBg text-white font-bold text-sm px-3 py-1.5 rounded-xl border border-darkBorder outline-none">${PAIRS.map(p => `<option value="${p.symbol}" ${p.symbol === pair.symbol ? 'selected' : ''}>${p.symbol}</option>`).join('')}</select><div class="text-right"><span class="text-[10px] text-slate-400 block">${tf} · Price</span><span class="font-heading font-bold text-sm text-white">$${fmtPrice(price, dec)}</span></div></div>
+        <div class="flex items-center justify-between bg-darkSurface p-3 rounded-2xl border border-darkBorder text-xs"><span class="text-slate-300 font-semibold">Timeframe:</span><div class="flex space-x-1">${['5M','15M','1H','4H','1D'].map(t => `<button onclick="router.navigate('swing','${pair.symbol}','${t}')" class="px-2 py-1 rounded-lg font-bold text-[10px] ${tf === t ? 'bg-accentBlue text-white' : 'bg-darkBg text-slate-400 border border-darkBorder'}">${t}</button>`).join('')}</div></div>
+        <div class="flex items-center justify-between bg-darkSurface p-3 rounded-2xl border border-darkBorder text-xs"><span class="text-slate-300 font-semibold">RR:</span><div class="flex space-x-1.5">${[2,3,4].map(rr => `<button onclick="setRr(${rr},'${pair.symbol}','${tf}')" class="px-3 py-1 rounded-xl font-bold ${STATE.defaultRr === rr ? 'bg-accentBlue text-white' : 'bg-darkBg text-slate-400 border border-darkBorder'}">1:${rr}</button>`).join('')}</div></div>
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-darkSurface border border-darkBorder text-xs"><div class="flex items-center space-x-2"><span class="w-2 h-2 rounded-full bg-accentGreen animate-pulse"></span><span class="text-slate-300">Candle closes:</span></div><span id="cd" class="font-mono font-bold text-accentBlue">--:--</span></div>
+        
+        <div class="rounded-3xl bg-gradient-to-br from-darkSurface to-darkBg border border-darkBorder p-5 space-y-3">
+            <div class="flex justify-between items-center"><span class="text-xs font-bold uppercase text-slate-400">Trade Setup</span><span class="text-xs font-extrabold px-3 py-1 rounded-full ${sigType==='BUY'?'bg-accentGreen/20 text-accentGreen':'bg-accentRed/20 text-accentRed'}">${sigType} 1:${STATE.defaultRr}</span></div>
+            <div class="flex justify-between text-[11px] border-b border-darkBorder/50 pb-2 mb-2"><span class="text-slate-400">Chart Pattern:</span><span class="font-bold ${pColor}">${patternMsg}</span></div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="p-2 rounded-xl bg-darkBg border border-darkBorder"><span class="text-[9px] text-slate-400 block">Entry</span><span class="font-bold text-xs text-white">$${fmtPrice(price, dec)}</span></div>
+                <div class="p-2 rounded-xl bg-darkBg border border-darkBorder"><span class="text-[9px] text-slate-400 block">SL (ATR)</span><span class="font-bold text-xs text-accentRed">$${fmtPrice(sl, dec)}</span></div>
+                <div class="p-2 rounded-xl bg-darkBg border border-darkBorder"><span class="text-[9px] text-slate-400 block">TP</span><span class="font-bold text-xs text-accentGreen">$${fmtPrice(tp, dec)}</span></div>
+            </div>
+            <div class="rounded-2xl bg-darkBg border border-accentBlue/30 p-3 space-y-1 text-[11px]">
+                <div class="flex justify-between"><span class="text-slate-400">Risk ${STATE.riskPct}%</span><span class="text-white font-bold">$${fmtPrice(STATE.balance * STATE.riskPct / 100)}</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Auto lot</span><span class="text-accentBlue font-bold">${autoLot.toFixed(2)}</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">EMA50 / RSI</span><span class="text-white font-bold">${fmtPrice(ema, dec)} / ${rsi.toFixed(1)}</span></div>
+            </div>
+            <button onclick="openChart('${pair.symbol}', '${tf}')" class="w-full py-2 rounded-xl bg-darkBg border border-darkBorder text-slate-300 font-semibold text-xs">📈 ${tf} Chart</button>
+            
+            <div class="flex space-x-2 pt-2">
+                <button onclick="openPendingOrderModal('${pair.symbol}', '${sigType}', ${price}, ${sl}, ${tp}, ${final})" class="flex-1 py-3.5 rounded-2xl bg-darkSurface border border-accentBlue text-accentBlue font-extrabold text-xs">⏳ Pending</button>
+                <button onclick="openChecklist('${pair.symbol}','${sigType}',${price},${sl},${tp},${final},'${tf}')" class="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-accentGreen to-emerald-600 text-white font-extrabold text-xs">🚀 Market</button>
+            </div>
+        </div>
+    </div>`;
+    startCd(tf);
+}
+function setRr(rr, sym, tf) { STATE.defaultRr = rr; saveState(); renderSwing(document.getElementById('appContent'), sym, tf); showToast(`RR 1:${rr}`, 'success'); }
+
+let cdIv = null;
+function startCd(tf = '15M') {
+    if (cdIv) clearInterval(cdIv);
+    const tfSecs = { '5M': 300, '15M': 900, '1H': 3600, '4H': 14400, '1D': 86400 }[tf] || 900;
+    const tick = () => { const now = Math.floor(Date.now() / 1000); const rem = tfSecs - (now % tfSecs); const h = Math.floor(rem / 3600); const m = Math.floor((rem % 3600) / 60); const s = rem % 60; const el = document.getElementById('cd'); if (el) { if (tfSecs >= 3600) el.innerText = `${h}h ${String(m).padStart(2,'0')}m`; else el.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; } };
+    tick(); cdIv = setInterval(tick, 1000);
+}
+
+function openChecklist(sym, type, entry, sl, tp, lots, tf = '15M') {
+    const openRisk = STATE.trades.filter(t => t.status === 'OPEN').reduce((a, t) => a + (Math.abs(t.entry - t.sl) * t.lots * getMultiplier(t.symbol)), 0);
+    const newRisk = Math.abs(entry - sl) * lots * getMultiplier(sym);
+    const maxRisk = STATE.balance * 0.03;
+    let todayPnL = STATE.balance - STATE.propFirm.todayStartBalance;
+    let dailyLimit = STATE.propFirm.accountSize * (STATE.propFirm.dailyLimitPct / 100);
+    let blockMsg = '';
+    if (openRisk + newRisk > maxRisk) blockMsg = `Max 3% risk reached. Open: $${fmtPrice(openRisk)}, Max: $${fmtPrice(maxRisk)}`;
+    if (todayPnL <= -dailyLimit) blockMsg = `Prop Firm Daily Loss Limit Hit! ($${fmtPrice(todayPnL)})`;
+    const dec = getDecimals(sym);
+
+    openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">Pre-Trade Checklist</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div>
+    ${blockMsg ? `<div class="bg-accentRed/20 border border-accentRed/50 p-3 rounded-xl text-accentRed text-xs font-bold text-center">🛑 BLOCKED: ${blockMsg}</div>` : ''}
+    <div class="rounded-2xl bg-darkBg border border-darkBorder p-3 text-center"><div class="text-xs text-slate-400">${type} ${sym} · ${tf}</div><div class="text-sm font-bold text-white mt-1">${lots.toFixed(2)} lots · Risk $${fmtPrice(Math.abs(entry - sl) * lots * getMultiplier(sym))}</div></div>
+    <textarea id="tradeNote" placeholder="Why are you taking this trade?" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2 text-xs text-white outline-none mb-2"></textarea>
+    <div class="flex flex-wrap gap-2 mb-2">
+        ${['Confident', 'Patient', 'FOMO', 'Revenge', 'Bored'].map(e => `<button onclick="document.getElementById('tradeEmotion').value='${e}'; this.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('bg-accentBlue')); this.classList.add('bg-accentBlue');" class="px-3 py-1.5 rounded-lg border border-darkBorder bg-darkBg text-[10px] text-slate-300 font-bold">${e}</button>`).join('')}
+        <input type="hidden" id="tradeEmotion" value="Confident">
+    </div>
+    <div class="space-y-2">${['Trend aligns','Entry at key level','SL beyond swing','RR ≥ 1:2','No news in 30 min','I accept the risk'].map((item, i) => `<label class="flex items-center space-x-3 p-3 rounded-xl bg-darkBg border border-darkBorder"><input type="checkbox" id="cf${i}" onchange="updateCf()" class="w-4 h-4 accent-accentGreen"><span class="text-xs text-slate-200">${item}</span></label>`).join('')}</div>
+    <button id="cfBtn" onclick="executeTrade('${sym}','${type}',${entry},${sl},${tp},${lots},'${tf}')" disabled class="w-full py-3.5 rounded-2xl bg-slate-600 text-slate-400 font-extrabold text-sm">Complete checklist</button></div>`);
+}
+function updateCf() { const all = [0,1,2,3,4,5].every(i => document.getElementById(`cf${i}`)?.checked); const b = document.getElementById('cfBtn'); if (!b) return; if (all) { b.disabled = false; b.className = 'w-full py-3.5 rounded-2xl bg-gradient-to-r from-accentGreen to-emerald-600 text-white font-extrabold text-sm'; b.innerText = '✓ EXECUTE'; } else { b.disabled = true; b.className = 'w-full py-3.5 rounded-2xl bg-slate-600 text-slate-400 font-extrabold text-sm'; b.innerText = 'Complete checklist'; } }
+
+function executeTrade(sym, type, entry, sl, tp, lots, tf = '15M') {
+    const todayLosses = STATE.trades.filter(t => { try { return new Date(t.time).toDateString() === new Date().toDateString() && (t.status === 'SL HIT' || t.status === 'CLOSED -'); } catch(e) { return false; } });
+    const last2Loss = STATE.trades.slice(0, 2).length >= 2 && STATE.trades.slice(0, 2).every(t => (t.status === 'SL HIT' || t.status === 'CLOSED -') && new Date(t.time).toDateString() === new Date().toDateString());
+    if (last2Loss && todayLosses.length >= 2) { showToast('🛑 KILL SWITCH: 2 losses in a row. Take a break. No revenge trade.', 'error'); return; }
+
+    const openRisk = STATE.trades.filter(t => t.status === 'OPEN').reduce((a, t) => a + (Math.abs(t.entry - t.sl) * t.lots * getMultiplier(t.symbol)), 0);
+    const newRisk = Math.abs(entry - sl) * lots * getMultiplier(sym);
+    if (openRisk + newRisk > STATE.balance * 0.03) { showToast('🛑 Max 3% open risk exceeded!', 'error'); return; }
+
+    let todayPnL = STATE.balance - STATE.propFirm.todayStartBalance;
+    let dailyLimit = STATE.propFirm.accountSize * (STATE.propFirm.dailyLimitPct / 100);
+    if (todayPnL <= -dailyLimit) { showToast('🛑 Prop Firm Daily Loss Limit hit. Cannot trade.', 'error'); return; }
+
+    const spreadCost = 2 * getPipValue(sym) * lots; const commission = 5 * lots;
+    STATE.balance -= (spreadCost + commission);
+
+    let safeTf = (tf && tf !== 'undefined' && tf !== 'null') ? tf : '15M';
+    let note = esc(document.getElementById('tradeNote')?.value || 'No notes.');
+    let emotion = document.getElementById('tradeEmotion').value;
+    
+    STATE.trades.unshift({ id: Date.now(), symbol: sym, type, entry: Number(entry), sl: Number(sl), tp: Number(tp), lots, tf: safeTf, rrRatio: `1:${STATE.defaultRr}`, pnl: 0, status: 'OPEN', time: new Date().toISOString(), beAlerted: false, partialClosed: false, partialPnl: 0, note: note, emotion: emotion, risk0: Math.abs(entry - sl) });
+    saveState(); closeModal();
+    showToast(`🚀 ${type} ${sym} opened`, 'success'); vib([150,50,150]);
+    sendTg(`🚀 ${type} ${sym} (${safeTf})\nEntry $${fmtPrice(entry)}\nSL $${fmtPrice(sl)}\nTP $${fmtPrice(tp)}\nLot ${lots.toFixed(2)}`);
+    pushNotif('trade', `Opened ${type} ${sym}`, `${lots.toFixed(2)} lots · ${safeTf}`);
+    router.navigate('journal');
+}
+
+async function renderSpike(c) {
+    c.innerHTML = `<div class="p-4"><div class="rounded-3xl bg-darkSurface border border-amber-500/30 p-6 text-center"><div class="text-accentGold text-xs font-bold">⚡ SPIKE TRADER</div><div class="text-slate-400 text-xs mt-2">Loading Calendar...</div></div></div>`;
+    let events = await fetchNews(); let isLive = true;
+    if (!events || events.length === 0) { events = fallbackEvents(); isLive = false; }
+    const now = Date.now();
+    const upcoming = events.filter(e => e.date.getTime() > now - 3600000);
+
+    let h = `<div class="p-4 space-y-3">
+        <div class="rounded-3xl bg-gradient-to-br from-amber-500/10 to-darkSurface border border-amber-500/30 p-5">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-bold uppercase text-accentGold">⚡ SPIKE TRADER</span>
+                <span class="text-[10px] ${isLive ? 'bg-accentGreen/20 text-accentGreen' : 'bg-accentRed/20 text-accentRed'} px-2 py-0.5 rounded-full font-bold">
+                    ${isLive ? '● Live Feed' : '● Offline'}
+                </span>
+            </div>
+            <p class="text-[10px] text-slate-400">15m Pre-News Setup • Post-News Retest Engine</p>
+        </div>`;
+
+    if (upcoming.length === 0) {
+        h += `<div class="rounded-3xl bg-darkSurface border border-darkBorder p-6 text-center text-xs text-slate-400">No High impact news scheduled right now.</div>`;
+    } else {
+        upcoming.forEach(ev => {
+            const pred = calcPrediction(ev);
+            const bColor = pred.bias === 'BULLISH' ? 'text-accentGreen' : pred.bias === 'BEARISH' ? 'text-accentRed' : 'text-slate-400';
+            const impactBadge = ev.impact === 'High' ? 'bg-accentRed/20 text-accentRed' : 'bg-accentGold/20 text-accentGold';
+            h += `<div class="rounded-3xl bg-darkSurface border border-darkBorder p-5 space-y-3">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center space-x-2 flex-wrap gap-1">
+                        <span class="px-2 py-0.5 rounded-lg text-[9px] font-bold ${impactBadge}">${ev.impact.toUpperCase()}</span>
+                        <span class="text-xs font-bold text-white">${esc(ev.title)}</span>
+                        <span class="text-[10px] text-slate-400 font-mono">${ev.currency}</span>
+                    </div>
+                    <span class="news-cd text-accentBlue font-mono text-[10px] font-bold" data-time="${ev.date.getTime()}">T-...</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+                    <div class="bg-darkBg p-2 rounded-xl border border-darkBorder"><span class="text-[9px] text-slate-500 block">Forecast</span><span class="text-white font-bold">${ev.forecast}</span></div>
+                    <div class="bg-darkBg p-2 rounded-xl border border-darkBorder"><span class="text-[9px] text-slate-500 block">Previous</span><span class="text-slate-300 font-bold">${ev.previous}</span></div>
+                    <div class="bg-darkBg p-2 rounded-xl border border-darkBorder"><span class="text-[9px] text-slate-500 block">Bias</span><span class="font-bold ${bColor}">${pred.bias}</span></div>
+                </div>
+                <div class="text-[10px] text-slate-400 bg-darkBg p-2.5 rounded-xl border border-darkBorder leading-snug"><strong class="text-slate-300">What it is:</strong> ${ev.description || 'High impact economic event.'}</div>
+                <button onclick="openSpikePlan('${ev.title.replace(/'/g,"\\'")}','${ev.currency}','${ev.forecast}','${ev.previous}',${ev.date.getTime() - now})" class="w-full py-2.5 rounded-xl bg-accentGold/20 border border-accentGold/50 text-accentGold font-bold text-xs hover:bg-accentGold/30 transition">🎯 Spike Trading Plan</button>
+            </div>`;
+        });
+    }
+    h += '</div>'; c.innerHTML = h;
+    startNewsCountdown();
+}
+
+let spikeTimer = null;
+function startNewsCountdown() {
+    if (spikeTimer) clearInterval(spikeTimer);
+    spikeTimer = setInterval(() => {
+        const now = Date.now();
+        document.querySelectorAll('.news-cd').forEach(el => {
+            const target = parseInt(el.getAttribute('data-time'));
+            const diff = target - now;
+            if (diff < 0) { el.innerText = 'PASSED'; el.className = 'text-slate-500 font-mono text-[10px] font-bold news-cd'; } 
+            else {
+                const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); const s = Math.floor((diff % 60000) / 1000);
+                if (h > 0) el.innerText = `T-${h}h ${m}m`; else el.innerText = `T-${m}m ${s}s`;
+                if (diff < 15 * 60000) el.className = 'text-accentRed animate-pulse font-mono text-[10px] font-bold news-cd';
+                else el.className = 'text-accentBlue font-mono text-[10px] font-bold news-cd';
+            }
+        });
+    }, 1000);
+}
+
+async function fetchNews() {
+    try { const r = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json'); if (!r.ok) throw new Error(); const d = await r.json(); 
+        return d.filter(e => e.impact === 'High').map(e => ({ title: e.title, currency: e.country, date: new Date(e.date), impact: e.impact, forecast: e.forecast || '—', previous: e.previous || '—', actual: e.actual || null,
+            description: e.title.includes('CPI') ? 'Inflation data. Higher = Rate Hikes = Currency Up.' : e.title.includes('NFP') ? 'Jobs data. Higher = Strong Economy = Currency Up.' : e.title.includes('Interest Rate') ? 'Central Bank Rate Decision. Biggest mover.' : e.title.includes('PPI') ? 'Producer Inflation. Leads CPI.' : e.title.includes('Retail Sales') ? 'Consumer Spending. Higher = Stronger Currency.' : e.title.includes('GDP') ? 'Economic Growth. Higher = Stronger Currency.' : e.title.includes('PMI') ? 'Business Activity. Above 50 = Growth.' : 'High impact indicator.' })).sort((a,b) => a.date - b.date); 
+    } catch(e) { return null; }
+}
+
+function fallbackEvents() {
+    const now = new Date(); const t = h => new Date(now.getTime() + h * 3600000);
+    return [
+        { title: 'US Non-Farm Payrolls (NFP)', currency: 'USD', date: t(2), impact: 'High', forecast: '180K', previous: '150K', description: 'Jobs data. Higher = Strong Economy = USD Up.' },
+        { title: 'US CPI (Inflation)', currency: 'USD', date: t(5), impact: 'High', forecast: '3.1%', previous: '3.2%', description: 'Inflation data. Higher = Rate Hikes = USD Up.' },
+        { title: 'US PPI (Producer Inflation)', currency: 'USD', date: t(8), impact: 'High', forecast: '0.3%', previous: '0.2%', description: 'Producer Inflation. Leads CPI.' },
+        { title: 'UK CPI (Inflation)', currency: 'GBP', date: t(12), impact: 'High', forecast: '3.8%', previous: '4.0%', description: 'UK Inflation. Affects GBP pairs.' },
+        { title: 'EU Interest Rate Decision', currency: 'EUR', date: t(24), impact: 'High', forecast: '4.00%', previous: '4.00%', description: 'ECB Rate Decision.' },
+        { title: 'US Retail Sales', currency: 'USD', date: t(30), impact: 'High', forecast: '0.4%', previous: '0.1%', description: 'Consumer Spending. Higher = Stronger USD.' },
+        { title: 'US GDP (QoQ)', currency: 'USD', date: t(36), impact: 'High', forecast: '2.1%', previous: '1.8%', description: 'Economic Growth. Higher = Stronger USD.' }
+    ];
+}
+
+function calcPrediction(ev) { 
+    const f = parseFloat(String(ev.forecast).replace(/[^0-9.\-]/g, '')); const p = parseFloat(String(ev.previous).replace(/[^0-9.\-]/g, ''));
+    let sur = 0; if (!isNaN(f) && !isNaN(p) && p !== 0) sur = ((f - p) / Math.abs(p)) * 100;
+    let bias = 'NEUTRAL';
+    if (sur > 0.05) bias = 'BULLISH';
+    if (sur < -0.05) bias = 'BEARISH';
+    if (ev.title.includes('Unemployment')) { if (sur > 0.05) bias = 'BEARISH'; if (sur < -0.05) bias = 'BULLISH'; }
+    return { surprise: sur, bias: bias };
+}
+
+function openSpikePlan(title, cur, forecast, previous, msUntil) {
+    const gold = STATE.marketData['GOLD']?.price || 4061.52;
+    const dec = getDecimals('GOLD');
+    const dir = forecast > previous ? 'BUY' : 'SELL';
+    const sl = dir === 'BUY' ? gold - 8 : gold + 8;
+    const tp = dir === 'BUY' ? gold + 16 : gold - 16;
+    openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">Spike Plan</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div>
+        <div class="rounded-2xl bg-darkBg border border-accentGold/30 p-4"><div class="text-[11px] text-slate-400">${cur} · ${title}</div><div class="text-sm font-bold text-white mt-1">Bias: ${dir} Gold</div></div>
+        <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+            <div class="bg-darkBg p-2 rounded-xl border border-darkBorder"><span class="text-slate-400 text-[9px]">Entry</span><div class="font-bold text-white">$${fmtPrice(gold, dec)}</div></div>
+            <div class="bg-darkBg p-2 rounded-xl border border-darkBorder"><span class="text-slate-400 text-[9px]">SL</span><div class="font-bold text-accentRed">$${fmtPrice(sl, dec)}</div></div>
+            <div class="bg-darkBg p-2 rounded-xl border border-darkBorder"><span class="text-slate-400 text-[9px]">TP</span><div class="font-bold text-accentGreen">$${fmtPrice(tp, dec)}</div></div>
+        </div>
+        <div class="space-y-2 text-[11px]">
+            <div class="rounded-xl bg-darkSurface border border-darkBorder p-3"><div class="text-accentRed font-bold mb-1">During Spike (0-5 mins)</div><div class="text-slate-300">Do NOT chase. Wait for the wick to form. The app is watching DXY vs Gold 30m correlation.</div></div>
+            <div class="rounded-xl bg-accentGreen/10 border border-accentGreen/30 p-3"><div class="text-accentGreen font-bold mb-1">The Retest (5-15 mins)</div><div class="text-slate-300">Wait for price to pull back. Enter ${dir} with SL beyond the spike wick and TP at 1:2 RR.</div></div>
+        </div>
+        <button onclick="closeModal(); openChecklist('GOLD', '${dir}', ${gold}, ${sl}, ${tp}, ${finalLot('GOLD', 8)}, '15M')" class="w-full py-3 rounded-xl bg-accentGold text-black font-extrabold text-sm">🎯 Pre-fill Trade in Checklist</button></div>`);
+}
+
+function buildAIContext() {
+    const lines = [`=== DAGBO LIVE STATE ===`, `UTC: ${new Date().toUTCString()}`, `Balance: $${fmtPrice(STATE.balance)}`];
+    lines.push(`\n=== LIVE PRICES ===`);
+    for (const p of PAIRS) { const d = STATE.marketData[p.symbol]; if (d) lines.push(`${p.symbol}: $${fmtPrice(d.price, getDecimals(p.symbol))} (${d.change}%)`); }
+    const open = STATE.trades.filter(t => t.status === 'OPEN');
+    lines.push(`\n=== OPEN TRADES ===`);
+    if (open.length === 0) lines.push('None'); else for (const t of open) lines.push(`${t.type} ${t.symbol} | Entry ${t.entry} | SL ${t.sl} | TP ${t.tp}`);
+    return lines.join('\n');
+}
+
+async function aiCall(systemPrompt, userMessage, useSearch = true) {
+  const context = buildAIContext();
+  const finalPrompt = `${TRADING_EXPERT_PROMPT}\n\n${systemPrompt}\n\nLIVE DATA:\n${context}\n\nUser Question: ${userMessage}`;
+
+  try {
+      if (STATE.workerUrl && !STATE.workerUrl.includes('YOUR-NAME')) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const r = await fetch(STATE.workerUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ system: systemPrompt, messages: [{role: 'user', content: userMessage}], search: useSearch }), signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (r.ok) { const j = await r.json(); if (j.text) return j.text; }
+      }
+  } catch(e) { console.log("Worker failed, trying free AI..."); }
+
+  try {
+      const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(finalPrompt)}`);
+      if (r.ok) { const text = await r.text(); if (text && text.length > 5) return text; }
+  } catch(e) { console.log("Free AI failed, using local brain."); }
+
+  return getLocalFallback(userMessage);
+}
+
+function getLocalFallback(prompt){
+  const p = (prompt||'').toLowerCase();
+  const gold = STATE.marketData['GOLD']?.price || 4061.52; const dxy = STATE.marketData['DXY']?.price || 104.50; const btc = STATE.marketData['BTC/USD']?.price || 96400;
+  
+  if(p.includes('smc') || p.includes('smart money') || p.includes('ict') || p.includes('concept') || p.includes('strategy') || p.includes('order block') || p.includes('fvg')) {
+      return `Smart Money Concepts (SMC) focus on tracking institutional order flow. Key concepts include:\n\n1. **Order Blocks (OB):** The last opposing candle before a strong move. It acts as a strong support/resistance zone.\n2. **Fair Value Gaps (FVG):** A 3-candle pattern where there is a gap between the wick of candle 1 and candle 3. Price usually returns to fill this gap.\n3. **Liquidity Sweeps:** When price pushes past a recent high/low to trigger stop losses, then aggressively reverses.\n\nSource: Local App Data`;
+  }
+  if(p.includes('dxy') || p.includes('dollar index')) return `DXY is currently at $${fmtPrice(dxy)}. It is ${STATE.marketData['DXY']?.change > 0 ? 'up' : 'down'} today.\n\nSource: Local App Data`;
+  if(p.includes('gold')||p.includes('xau')) return `GOLD now $${fmtPrice(gold)}. Retest Rule: Wait 5-15 mins after spike, enter on 15M close, SL beyond wick, TP 1:${STATE.defaultRr}.\n\nSource: Local App Data`;
+  if(p.includes('signal')||p.includes('buy')||p.includes('sell')){ const t = runAutoScan()[0]; return t ? `Best Local Signal: ${t.direction} ${t.symbol} ${t.tf} - ${t.confidence}% confidence.\n\nSource: Local App Data` : 'No setup now. Wait for confluence.'; }
+  if(p.includes('risk')||p.includes('rr')||p.includes('lot')||p.includes('size')){ const risk = STATE.balance*STATE.riskPct/100; return `Risk: ${STATE.riskPct}% = $${fmtPrice(risk)} per trade. RR 1:${STATE.defaultRr} = Win $${fmtPrice(risk*STATE.defaultRr)} if TP hit.\n\nSource: Local App Data`; }
+  if(p.includes('news')||p.includes('cpi')||p.includes('nfp')||p.includes('event')) return `News Rule: Do NOT chase spike. Wait 5-15 mins for pullback to broken level, enter on 15M confirmation. Check Spike tab.\n\nSource: Local App Data`;
+  if(p.includes('psychology') || p.includes('lose') || p.includes('revenge') || p.includes('emotional') || p.includes('fear')) return `Trading psychology is 80% of the game. If you are losing, stop trading. The app has a built-in "Kill Switch" that locks you out if you lose 2 trades in a row on the same day. This prevents revenge trading.\n\nSource: Local App Data`;
+  if(p.includes('account') || p.includes('health') || p.includes('balance')) { const open = STATE.trades.filter(t=>t.status==='OPEN').length; return `Your account is at $${fmtPrice(STATE.balance)}. You have ${open} open trades. Risk per trade is ${STATE.riskPct}%. Keep your open risk below 3% to protect the account.\n\nSource: Local App Data`; }
+  if(p.includes('question') || p.includes('ask')) return `You can ask me things like:\n- "Explain Fair Value Gaps"\n- "How do I size my lot?"\n- "What is the DXY doing?"\n- "Give me a trade signal"\n- "Why am I losing money?"\nWhat would you like to learn?\n\nSource: Local App Data`;
+  return `Worker offline (Settings > Worker URL). Live Data: GOLD $${fmtPrice(gold)} | DXY $${fmtPrice(dxy)} | BTC $${fmtPrice(btc)}. Ask "gold", "dxy", "smc", "signal", or "risk".\n\nSource: Local App Data`;
+}
+
+async function sendChat() {
+  const inp = document.getElementById('chatIn'); if(!inp) return;
+  const text = inp.value.trim(); if(!text) return;
+  STATE.activeChat.push({ role: 'user', text }); inp.value = '';
+  STATE.activeChat.push({ role: 'assistant', text: '⏳ Thinking...' }); renderAI(document.getElementById('appContent'));
+  let reply = '';
+  try { reply = await aiCall('Answer the question fully and accurately.', text, true); } catch(e) { reply = getLocalFallback(text); }
+  STATE.activeChat.pop(); STATE.activeChat.push({ role: 'assistant', text: reply }); saveState(); renderAI(document.getElementById('appContent'));
+  try { speak(reply.split(' ').slice(0, 15).join(' '), false); } catch(e){}
+}
+
+function renderAI(c) {
+    c.innerHTML = `<div class="flex flex-col h-[calc(100vh-120px)] p-4"><div class="flex items-center justify-between pb-3 border-b border-darkBorder mb-3"><div class="flex items-center space-x-2"><div class="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-xs">AI</div><div><h3 class="font-heading font-bold text-sm text-white">Claude Expert</h3><span class="text-[10px] text-accentGreen">● Web Search Active</span></div></div><button onclick="clearChat()" class="text-[10px] text-slate-400 px-2 py-1 rounded-xl bg-darkSurface border border-darkBorder">Clear</button></div><div class="grid grid-cols-2 gap-2 mb-3"><button onclick="generateSignal()" class="p-2.5 rounded-xl bg-gradient-to-br from-accentGreen/20 to-darkSurface border border-accentGreen/40 text-left"><div class="text-[10px] font-bold text-accentGreen">🎯 SIGNAL</div><div class="text-[9px] text-slate-400">Best trade now</div></button></div><div id="chatBox" class="flex-1 overflow-y-auto space-y-3 pr-1 pb-4">${STATE.activeChat.map(m => `<div class="flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}"><div class="max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'bg-accentBlue text-white rounded-br-none' : 'bg-darkSurface border border-darkBorder text-slate-200 rounded-bl-none'}">${esc(m.text).replace(/\n/g, '<br>')}</div></div>`).join('')}</div><div class="pt-2 flex items-center space-x-2"><button onclick="startVoice()" class="p-3 rounded-2xl bg-darkSurface border border-darkBorder text-slate-300">🎤</button><input id="chatIn" onkeydown="if(event.key==='Enter')sendChat()" placeholder="Ask anything..." class="flex-1 bg-darkSurface border border-darkBorder rounded-2xl px-4 py-3 text-xs text-white outline-none focus:border-accentBlue"><button onclick="sendChat()" class="p-3 rounded-2xl bg-accentBlue text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button></div></div>`;
+    const b = document.getElementById('chatBox'); if (b) b.scrollTop = b.scrollHeight;
+}
+function startVoice() { if (!('webkitSpeechRecognition' in window)) { showToast('Voice not supported', 'error'); return; } const rec = new webkitSpeechRecognition(); rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1; rec.onstart = () => { showToast('🎤 Listening...', 'info'); }; rec.onresult = (e) => { document.getElementById('chatIn').value = e.results[0][0].transcript; sendChat(); }; rec.onerror = () => showToast('Voice error', 'error'); rec.start(); }
+function clearChat() { confirmAction('Clear Chat?', 'Delete messages?', () => { backupState('Clear Chat'); STATE.activeChat = [{ role: 'assistant', text: 'Cleared.' }]; saveState(); renderAI(document.getElementById('appContent')); }, false); }
+
+async function generateSignal() {
+    showToast('🧠 AI analyzing all pairs…', 'info');
+    const sys = `Analyze LIVE DATA and pick the SINGLE best trade setup. If no clear setup, output ONLY {"signal":"NO TRADE","reasoning":"Why no trade"}. Otherwise output ONLY valid JSON: {"signal":"BUY","symbol":"GOLD","timeframe":"15M","confidence":85,"reasoning":"2 sentences","entry":4061,"stopLoss":4051,"takeProfit":4081,"strategy":"SMC","pattern":"FVG","indicators":"RSI"}`;
+    try{ 
+        const reply=await aiCall(sys,'Generate signal.',false); 
+        const sig=JSON.parse(reply.match(/\{[\s\S]*\}/)[0]); 
+        
+        if (STATE.autoPilot && sig.confidence >= 85 && sig.signal !== 'NO TRADE') {
+            const slPips = Math.abs(sig.entry - sig.stopLoss) / getPipSize(sig.symbol);
+            executeTrade(sig.symbol, sig.signal, sig.entry, sig.stopLoss, sig.takeProfit, finalLot(sig.symbol, slPips || 30), sig.timeframe || '15M');
+            showToast('🤖 Auto-Pilot Executed Trade', 'success');
+        } else {
+            renderSignalCard(sig,false); 
+        }
+    }
+    catch(e){ 
+        const t=runAutoScan()[0]; 
+        if(!t){ renderSignalCard({signal:'NO TRADE',reasoning:'Scanner found no confluence. Wait.'},false); return; } 
+        const pr=STATE.marketData[t.symbol]?.price||4061; 
+        const sl=t.direction==='BUY'?pr-5:pr+5; 
+        const tp=t.direction==='BUY'?pr+5*STATE.defaultRr:pr-5*STATE.defaultRr; 
+        
+        if (STATE.autoPilot && t.confidence >= 85) {
+            executeTrade(t.symbol, t.direction, pr, sl, tp, finalLot(t.symbol, 30), t.tf);
+            showToast('🤖 Auto-Pilot Executed Local Signal', 'success');
+        } else {
+            renderSignalCard({signal:t.direction,symbol:t.symbol,timeframe:t.tf,confidence:t.confidence,reasoning:'Local fallback: Worker offline, using Scanner.',entry:pr,stopLoss:sl,takeProfit:tp,strategy:'Local Scanner',pattern:'Momentum',indicators:'EMA+RSI'},false); 
+        }
+    }
+}
+
+function renderSignalCard(sig, isSpike = false, isPostSpike = false) {
+    if(!sig || sig.signal==='NO TRADE' || sig.signal==='NO_TRADE'){
+        openModal(`<div class="space-y-4"><div class="flex justify-between"><h3 class="font-bold text-sm">⏸️ NO TRADE</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div><p class="text-xs text-slate-300 leading-relaxed">${esc(sig?.reasoning || 'No clear confluence. Waiting is a trade. No setup, no entry.')}</p><button onclick="closeModal()" class="w-full py-3 rounded-2xl bg-darkBg border border-darkBorder text-xs font-bold">Close</button></div>`);
+        return;
+    }
+    if(!PAIRS.some(p=>p.symbol===sig.symbol)){ showToast('Invalid symbol from AI, ignored.','error'); return; }
+    const isBuy = sig.signal==='BUY';
+    const entry = Number(sig.entry ?? STATE.marketData[sig.symbol]?.price);
+    const sl = Number(sig.stopLoss ?? sig.sl);
+    const tp = Number(sig.takeProfit ?? sig.tp);
+    if(!entry || !sl || !tp){ showToast('AI signal missing Entry/SL/TP','error'); return; }
+    if(isBuy && !(sl < entry && tp > entry)){ showToast('AI SL/TP on wrong side, ignored.','error'); return; }
+    if(!isBuy && !(sl > entry && tp < entry)){ showToast('AI SL/TP on wrong side, ignored.','error'); return; }
+    const title = isSpike ? '⚡ PRE-NEWS SPIKE SIGNAL' : isPostSpike ? '🌊 POST-NEWS RETEST SIGNAL' : '🎯 AI TRADE SIGNAL';
+    const slPips = Math.abs(entry - sl) / getPipSize(sig.symbol);
+    const lot = finalLot(sig.symbol, slPips || 30);
+    const dec = getDecimals(sig.symbol);
+    
+    openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">${title}</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div><div class="rounded-2xl bg-darkBg border border-darkBorder p-4 space-y-2"><div class="flex justify-between"><span class="text-lg font-extrabold text-white">${esc(sig.signal)} ${esc(sig.symbol)}</span><span class="text-[10px] px-2 py-1 rounded-full bg-accentGreen/20 text-accentGreen font-bold">${esc(String(sig.confidence||75))}%</span></div><p class="text-[11px] text-slate-300">${esc(sig.reasoning||'')}</p></div><div class="rounded-2xl bg-darkSurface border border-accentBlue/30 p-3 space-y-1"><div class="text-[9px] font-bold text-accentBlue uppercase tracking-wider mb-1 text-center">Signal Source</div><div class="grid grid-cols-3 gap-1 text-[10px] text-slate-300 text-center"><div><span class="text-slate-500 block">Strategy</span><b class="text-white">${esc(sig.strategy || 'SMC / Price Action')}</b></div><div><span class="text-slate-500 block">Pattern</span><b class="text-white">${esc(sig.pattern || 'Liquidity Sweep')}</b></div><div><span class="text-slate-500 block">Indicators</span><b class="text-white">${esc(sig.indicators || 'EMA + RSI')}</b></div></div></div><div class="grid grid-cols-3 gap-2 text-center text-[11px]"><div class="p-2.5 rounded-xl bg-darkBg border border-darkBorder"><div class="text-slate-400 text-[9px]">Entry</div><div class="font-bold text-white">$${fmtPrice(entry, dec)}</div></div><div class="p-2.5 rounded-xl bg-darkBg border border-darkBorder"><div class="text-slate-400 text-[9px]">SL</div><div class="font-bold text-accentRed">$${fmtPrice(sl, dec)}</div></div><div class="p-2.5 rounded-xl bg-darkBg border border-darkBorder"><div class="text-slate-400 text-[9px]">TP</div><div class="font-bold text-accentGreen">$${fmtPrice(tp, dec)}</div></div></div><button onclick="openChecklist('${esc(sig.symbol)}','${esc(sig.signal)}',${entry},${sl},${tp},${lot},'${esc(sig.timeframe||'15M')}')" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-accentGreen to-emerald-600 text-white font-extrabold text-sm shadow-lg">🚀 EXECUTE (${lot.toFixed(2)} lot)</button></div>`);
+}
+
+// --- AI JOURNAL COACH ---
+async function analyzeJournal() {
+    const closed = STATE.trades.filter(t => t.status !== 'OPEN');
+    if (closed.length === 0) { showToast('No closed trades to analyze.', 'error'); return; }
+    
+    let summary = "Here are my recent closed trades:\n";
+    closed.slice(0, 15).forEach(t => {
+        summary += `${t.type} ${t.symbol} (${t.tf}): Entry $${t.entry}, Exit Status: ${t.status}, PnL: $${t.pnl}, Emotion: ${t.emotion}, Note: "${t.note}"\n`;
+    });
+    
+    const sys = `Analyze my trading performance based on these recent trades. Identify my weaknesses, my best pairs, and how my emotions (FOMO, Revenge, etc.) affect my PnL. Give me 3 strict rules to improve.`;
+    
+    openModal(`<div class="space-y-4 text-center py-8"><div class="text-4xl animate-spin">🧠</div><div class="text-sm text-white font-bold">AI Coach is analyzing your trades...</div></div>`);
+    
+    try {
+        const reply = await aiCall(sys, summary, true);
+        openModal(`<div class="space-y-4">
+            <div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">🧠 AI Trade Coach</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div>
+            <div class="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-darkBg p-4 rounded-xl border border-darkBorder max-h-96 overflow-y-auto">${esc(reply).replace(/\n/g, '<br>')}</div>
+            <button onclick="closeModal()" class="w-full py-3 rounded-xl bg-accentBlue text-white font-bold text-sm">Close</button>
+        </div>`);
+    } catch(e) {
+        showToast('AI Offline', 'error');
+        closeModal();
+    }
+}
+
+function renderJournal(c) {
+    const closed = STATE.trades.filter(t => t.status !== 'OPEN');
+    const tp = closed.reduce((a, t) => a + t.pnl, 0);
+    const wins = closed.filter(t => t.pnl > 0);
+    const losses = closed.filter(t => t.pnl < 0);
+    
+    const winRate = closed.length ? (wins.length/closed.length) : 0; 
+    const avgWin = wins.length ? (wins.reduce((a,b)=>a+Math.abs(b.pnl),0)/wins.length) : 0; 
+    const avgLoss = losses.length ? (losses.reduce((a,b)=>a+Math.abs(b.pnl),0)/losses.length) : 0;
+    const expectancy = (winRate * avgWin) - ((1-winRate) * avgLoss); 
+    const profitFactor = avgLoss > 0 ? ((wins.length * avgWin) / (losses.length * avgLoss)) : 0;
+    
+    const emoStats = {};
+    closed.forEach(t => { if(t.emotion){ if(!emoStats[t.emotion]) emoStats[t.emotion] = {w:0, l:0}; if(t.pnl > 0) emoStats[t.emotion].w++; else emoStats[t.emotion].l++; }});
+    const emoHtml = Object.keys(emoStats).map(e => {
+        const s = emoStats[e]; const wr = Math.round((s.w / (s.w + s.l)) * 100);
+        return `<div class="flex justify-between text-[10px] text-slate-400"><span>${e}</span><span class="${wr >= 50 ? 'text-accentGreen' : 'text-accentRed'}">${wr}%</span></div>`;
+    }).join('');
+
+    const totalR = closed.reduce((a,t) => { const risk = Math.abs(t.entry - t.sl) * t.lots * getMultiplier(t.symbol) || 1; return a + (t.pnl/risk); }, 0);
+    const proExpectancy = closed.length ? (totalR/closed.length).toFixed(2) : '0.00';
+    const emoCount = {}; closed.forEach(t => { if(t.emotion) emoCount[t.emotion] = (emoCount[t.emotion]||0)+1; });
+    const topEmotion = Object.entries(emoCount).sort((a,b) => b[1]-a[1])[0]?.[0] || 'Confident';
+    const bestPairMap = {}; closed.forEach(t => { bestPairMap[t.symbol] = (bestPairMap[t.symbol]||0) + t.pnl; });
+    const bestPair = Object.entries(bestPairMap).sort((a,b) => b[1]-a[1])[0]?.[0] || '-';
+
+    c.innerHTML = `<div class="p-4 space-y-4">
+        <div class="rounded-3xl bg-darkSurface border border-darkBorder p-5 space-y-3">
+            <div class="flex justify-between"><span class="text-xs font-bold uppercase text-slate-400">Performance</span><span class="text-xs font-semibold px-2.5 py-1 rounded-full ${tp>=0?'bg-accentGreen/20 text-accentGreen':'bg-accentRed/20 text-accentRed'}">Net $${fmtPrice(tp)}</span></div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="p-2 rounded-2xl bg-darkBg border border-darkBorder"><span class="text-[10px] text-slate-400 block">Trades</span><span class="font-bold text-sm text-white">${STATE.trades.length}</span></div>
+                <div class="p-2 rounded-2xl bg-darkBg border border-darkBorder"><span class="text-[10px] text-slate-400 block">Win</span><span class="font-bold text-sm text-accentGreen">${closed.length ? Math.round(winRate*100) : 0}%</span></div>
+                <div class="p-2 rounded-2xl bg-darkBg border border-darkBorder"><span class="text-[10px] text-slate-400 block">Exp.</span><span class="font-bold text-sm ${expectancy>=0?'text-accentGreen':'text-accentRed'}">$${fmtPrice(expectancy)}</span></div>
+            </div>
+            <div class="text-[10px] text-slate-400 text-center border-t border-darkBorder/50 pt-2">Profit Factor: <strong class="${profitFactor >= 1.5 ? 'text-accentGreen' : 'text-accentGold'}">${profitFactor.toFixed(2)}</strong></div>
+        </div>
+        
+        <button onclick="analyzeJournal()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-accentBlue text-white font-extrabold text-sm shadow-lg">🧠 Ask AI Coach to Analyze</button>
+
+        <div class="rounded-2xl bg-darkSurface border border-darkBorder p-4">
+            <div class="grid grid-cols-3 gap-2 text-center"><div class="p-2 rounded-xl bg-darkBg border border-darkBorder"><span class="text-[9px] text-slate-400 block">Total R</span><b class="${totalR>=0?'text-accentGreen':'text-accentRed'}">${totalR.toFixed(1)}R</b></div><div class="p-2 rounded-xl bg-darkBg border border-darkBorder"><span class="text-[9px] text-slate-400 block">Expectancy</span><b>${proExpectancy}R</b></div><div class="p-2 rounded-xl bg-darkBg border border-darkBorder"><span class="text-[9px] text-slate-400 block">Best Pair</span><b>${bestPair}</b></div></div>
+            <div class="text-[10px] text-slate-500 text-center pt-2">Top Emotion: <b class="text-white">${topEmotion}</b></div>
+        </div>
+        
+        <div class="rounded-3xl bg-darkSurface border border-darkBorder p-4 space-y-2"><h3 class="font-heading font-bold text-xs text-slate-400 uppercase">Equity Curve</h3><div id="equityChart" class="w-full h-32"></div></div>
+        
+        ${Object.keys(emoStats).length > 0 ? `<div class="rounded-3xl bg-darkSurface border border-darkBorder p-4 space-y-2"><h3 class="font-heading font-bold text-xs text-slate-400 uppercase">Emotion Win Rates</h3><div class="space-y-1">${emoHtml}</div></div>` : ''}
+
+        <div class="flex items-center space-x-2"><h3 class="font-heading font-bold text-xs text-slate-400 uppercase">Trades</h3><button onclick="panicCloseAll()" class="text-[9px] bg-accentRed/20 text-accentRed border border-accentRed/50 px-2 py-1 rounded font-bold">🚨 PANIC</button><button onclick="exportCSV()" class="text-[9px] bg-accentBlue/20 text-accentBlue border border-accentBlue/50 px-2 py-1 rounded font-bold">📥 CSV</button>${STATE.trades.length?`<button onclick="clearJ()" class="text-[10px] text-accentRed ml-auto">Clear</button>`:''}</div>
+        <div class="space-y-2.5">${STATE.trades.length === 0 ? `<div class="text-center py-12 text-slate-500 text-xs">No trades yet.</div>` : STATE.trades.map(t => `<div class="rounded-2xl bg-darkSurface border border-darkBorder p-4 space-y-2"><div class="flex justify-between items-center"><div class="flex items-center space-x-2"><span class="px-2 py-0.5 rounded-lg text-[10px] font-bold ${t.type==='BUY'?'bg-accentGreen/20 text-accentGreen':'bg-accentRed/20 text-accentRed'}">${t.type}</span><span class="font-bold text-sm text-white">${t.symbol}</span><span class="text-[10px] text-accentBlue font-mono">${t.rrRatio}</span><span class="text-[10px] text-slate-400">${t.tf||'15M'}</span></div><span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${t.status==='OPEN'?'bg-accentBlue/20 text-accentBlue':(t.status==='TP HIT'?'bg-accentGreen/20 text-accentGreen':'bg-accentRed/20 text-accentRed')}">${t.status}</span></div><div class="grid grid-cols-4 gap-1 text-[10px] text-slate-400"><div>Entry: <strong class="text-white">$${fmtPrice(t.entry)}</strong></div><div>SL: <strong class="text-red-400">$${fmtPrice(t.sl)}</strong></div><div>TP: <strong class="text-green-400">$${fmtPrice(t.tp)}</strong></div><div class="text-right">PnL: <strong class="${t.pnl>=0?'text-accentGreen':'text-accentRed'}">$${fmtPrice(t.pnl)}</strong></div></div>${t.note && t.note !== 'No notes.' ? `<div class="text-[10px] text-slate-500 italic bg-darkBg p-1.5 rounded-lg border border-darkBorder">📝 ${esc(t.note)} ${t.emotion ? `| 🧠 ${t.emotion}` : ''}</div>` : ''}<div class="flex space-x-2 pt-1">${t.status==='OPEN'?`<button onclick="closeEarly(${t.id})" class="flex-1 py-1.5 rounded-xl bg-darkBg border border-accentRed/40 text-accentRed text-[10px] font-bold">Close</button>`:''}<button onclick="shareTrade(${t.id})" class="flex-1 py-1.5 rounded-xl bg-darkBg border border-accentBlue/40 text-accentBlue text-[10px] font-bold">Share</button></div></div>`).join('')}</div></div>`;
+
+    setTimeout(() => {
+        const box = document.getElementById('equityChart');
+        if (box && window.LightweightCharts) {
+            box.innerHTML = '';
+            const chart = LightweightCharts.createChart(box, { layout: { background: { type: 'solid', color: '#121826' }, textColor: '#94A3B8' }, grid: { vertLines: { color: '#1E293B' }, horzLines: { color: '#1E293B' } }, rightPriceScale: { borderColor: '#1E293B' }, timeScale: { borderColor: '#1E293B', visible: false } });
+            const s = chart.addLineSeries({ color: '#3B82F6', lineWidth: 2 });
+            let data = [{ time: '2026-01-01', value: 1000 }];
+            let curBal = 1000;
+            closed.reverse().forEach((t, i) => {
+                curBal += t.pnl;
+                data.push({ time: new Date(Date.now() - (closed.length - i) * 86400000).toISOString().split('T')[0], value: curBal });
+            });
+            s.setData(data); chart.timeScale().fitContent();
+        }
+    }, 100);
+}
+
+function exportCSV() {
+    const rows = [['time','symbol','type','tf','entry','sl','tp','lots','status','pnl','note']];
+    STATE.trades.forEach(t => rows.push([t.time,t.symbol,t.type,t.tf,t.entry,t.sl,t.tp,t.lots,t.status,t.pnl,`"${(t.note||'').replace(/"/g,'""')}"`]));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([rows.map(r => r.join(',')).join('\n')], {type:'text/csv'}));
+    a.download = `dagbo-journal-${Date.now()}.csv`; a.click();
+}
+
+function panicCloseAll() { confirmAction('PANIC CLOSE ALL?', 'Close ALL open trades at current market price?', () => { backupState('Panic Close All'); let count = 0; STATE.trades.forEach(t => { if (t.status === 'OPEN') { const cur = STATE.marketData[t.symbol]?.price || t.entry; const pnl = (t.type === 'BUY' ? (cur - t.entry) : (t.entry - cur)) * t.lots * getMultiplier(t.symbol); t.pnl = pnl; t.status = pnl >= 0 ? 'CLOSED +' : 'CLOSED -'; STATE.balance += pnl; count++; } }); saveState(); showToast(`🚨 Closed ${count} trades!`, 'error'); renderJournal(document.getElementById('appContent')); }); }
+function clearJ() { confirmAction('Clear Trades?', 'Delete journal?', () => { backupState('Clear Journal'); STATE.trades = []; saveState(); renderJournal(document.getElementById('appContent')); }); }
+function closeEarly(id) { const t = STATE.trades.find(x => x.id === id); if (!t || t.status !== 'OPEN') return; confirmAction('Close Trade?', `Close ${t.symbol}?`, () => { backupState('Closed Trade'); const cur = STATE.marketData[t.symbol]?.price || t.entry; const pnl = (t.type === 'BUY' ? (cur - t.entry) : (t.entry - cur)) * t.lots * getMultiplier(t.symbol); t.pnl = pnl; t.status = pnl >= 0 ? 'CLOSED +' : 'CLOSED -'; STATE.balance += pnl; saveState(); showToast(`Closed: ${pnl>=0?'+':''}$${fmtPrice(pnl)}`, pnl>=0?'success':'error'); renderJournal(document.getElementById('appContent')); }); }
+function shareTrade(id) { const t = STATE.trades.find(x => x.id === id); if(!t) return; const txt = `📊 ${t.type} ${t.symbol} (${t.rrRatio})\nEntry $${fmtPrice(t.entry)}\nSL $${fmtPrice(t.sl)}\nTP $${fmtPrice(t.tp)}\nStatus: ${t.status}\nPnL $${fmtPrice(t.pnl)}`; if(navigator.share) navigator.share({title:'DAGBO', text:txt}).catch(()=>{}); else if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>showToast('Copied','success')); }
+
+function confirmAction(title, message, onConfirm, destructive = true) { openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm ${destructive?'text-accentRed':'text-white'}">${destructive?'⚠️ ':''}${title}</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div><div class="rounded-2xl bg-darkBg border ${destructive?'border-accentRed/40':'border-darkBorder'} p-4 text-xs text-slate-300">${message}</div><div class="grid grid-cols-2 gap-2"><button onclick="closeModal()" class="py-3 rounded-2xl bg-darkSurface border border-darkBorder text-slate-300 font-bold text-sm">Cancel</button><button id="cfmBtn" class="py-3 rounded-2xl ${destructive?'bg-accentRed':'bg-accentGreen'} text-white font-bold text-sm">${destructive?'Yes, proceed':'Confirm'}</button></div></div>`); document.getElementById('cfmBtn').onclick = () => { closeModal(); onConfirm(); }; }
+function backupState(reason) { const backups = JSON.parse(localStorage.getItem('dagbo_backups')||'[]'); backups.unshift({reason, time:Date.now(), balance:STATE.balance, trades:JSON.parse(JSON.stringify(STATE.trades)), alerts:JSON.parse(JSON.stringify(STATE.alerts)), chat:JSON.parse(JSON.stringify(STATE.activeChat)), notifs:JSON.parse(JSON.stringify(STATE.notifications)), settings:{riskMode:STATE.riskMode, riskPct:STATE.riskPct, defaultRr:STATE.defaultRr, manualLot:STATE.manualLot, soundMode:STATE.soundMode}}); localStorage.setItem('dagbo_backups', JSON.stringify(backups.slice(0,10))); }
+function undoLast() { const backups = JSON.parse(localStorage.getItem('dagbo_backups')||'[]'); if(!backups.length){showToast('Nothing to undo','error');return;} const snap = backups[0]; STATE.balance=snap.balance; STATE.trades=snap.trades; STATE.alerts=snap.alerts; STATE.activeChat=snap.chat; STATE.notifications=snap.notifs; Object.assign(STATE, snap.settings); saveState(); backups.shift(); localStorage.setItem('dagbo_backups', JSON.stringify(backups)); showToast(`↩️ Undone: ${snap.reason}`,'success'); router.navigate(router.current); }
+function exportBackup(auto = false) { 
+    const json = JSON.stringify({version:2, exported:new Date().toISOString(), balance:STATE.balance, trades:STATE.trades, alerts:STATE.alerts, chat:STATE.activeChat, notifs:STATE.notifications, settings:{riskMode:STATE.riskMode, riskPct:STATE.riskPct, defaultRr:STATE.defaultRr, manualLot:STATE.manualLot, soundMode:STATE.soundMode, voiceName:STATE.voiceName, autoPilot:STATE.autoPilot, propFirm:STATE.propFirm}}, null, 2); 
+    const b = new Blob([json],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`dagbo-backup-${Date.now()}.json`; a.click();
+    if (!auto && navigator.clipboard) navigator.clipboard.writeText(json).then(()=>showToast('📋 Backup copied & downloaded','success')); 
+}
+function importBackup() { openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">Import</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div><textarea id="importTxt" rows="8" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-[10px] text-white font-mono" placeholder='{"version":2,...}'></textarea><button onclick="doImport()" class="w-full py-3 rounded-2xl bg-accentGreen text-white font-bold text-sm">Import</button></div>`); }
+function doImport() { try { const data = JSON.parse(document.getElementById('importTxt').value); backupState('Before import'); STATE.balance=data.balance??STATE.balance; STATE.trades=data.trades??STATE.trades; STATE.alerts=data.alerts??STATE.alerts; STATE.activeChat=data.chat??STATE.activeChat; STATE.notifications=data.notifs??STATE.notifications; if(data.settings) Object.assign(STATE,data.settings); saveState(); closeModal(); showToast('Imported — tap Undo to revert','success'); router.navigate(router.current); } catch(e){showToast('Invalid JSON','error');} }
+
+function renderSettings(c) {
+    c.innerHTML = `<div class="p-4 space-y-4"><h2 class="font-heading font-bold text-base text-white">Settings</h2>
+        <button onclick="requestNotifPermission()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-extrabold text-sm shadow-lg mb-2">
+            🔔 Enable Phone Notifications
+        </button>
+        <div class="rounded-3xl bg-darkSurface border border-darkBorder p-5 space-y-3"><h3 class="font-heading font-bold text-xs text-accentGreen uppercase">Trading</h3>
+        <div><label class="text-[10px] text-slate-400 block mb-1">Risk Mode</label><select id="sMode" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-xs text-white"><option value="Safe" ${STATE.riskMode==='Safe'?'selected':''}>Safe</option><option value="Normal" ${STATE.riskMode==='Normal'?'selected':''}>Normal</option><option value="Aggressive" ${STATE.riskMode==='Aggressive'?'selected':''}>Aggressive</option></select></div>
+        <div><label class="text-[10px] text-slate-400 block mb-1">Risk % per trade</label><input type="number" step="0.1" id="sRisk" value="${STATE.riskPct}" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-xs text-white"></div>
+        <div><label class="text-[10px] text-slate-400 block mb-1">Manual Lot Override (0 = auto)</label><input type="number" step="0.01" id="sManualLot" value="${STATE.manualLot}" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-xs text-white"></div>
+        <div><label class="text-[10px] text-slate-400 block mb-1">Default RR</label><select id="sRr" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-xs text-white"><option value="2" ${STATE.defaultRr===2?'selected':''}>1:2</option><option value="3" ${STATE.defaultRr===3?'selected':''}>1:3</option><option value="4" ${STATE.defaultRr===4?'selected':''}>1:4</option></select></div>
+        <div><label class="text-[10px] text-slate-400 block mb-1">Sound Alerts</label><select id="sSound" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-xs text-white"><option value="all" ${STATE.soundMode==='all'?'selected':''}>Full (Voice + Vibration)</option><option value="alerts" ${STATE.soundMode==='alerts'?'selected':''}>Alerts Only</option><option value="off" ${STATE.soundMode==='off'?'selected':''}>Off</option></select></div>
+        
+        <div><label class="text-[10px] text-slate-400 block mb-1">AI Voice Persona</label><select id="sVoice" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-xs text-white"></select></div>
+        <div class="flex justify-between items-center pt-2 border-t border-darkBorder/50"><span class="text-[10px] text-accentGold font-bold">🤖 Auto-Pilot (85%+ Conf)</span><input type="checkbox" id="sAutoPilot" ${STATE.autoPilot?'checked':''} class="w-4 h-4 accent-accentGold"></div>
+        </div>
+        
+        <div class="rounded-3xl bg-darkSurface border border-darkBorder p-5 space-y-3"><h3 class="font-heading font-bold text-xs text-accentBlue uppercase">Prop Firm</h3><div><label class="text-[10px] text-slate-400 block mb-1">Account Size ($)</label><input type="number" id="pfS" value="${STATE.propFirm.accountSize}" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-xs text-white"></div><div class="grid grid-cols-3 gap-2"><div><label class="text-[10px] text-slate-400 block mb-1">Target %</label><input type="number" id="pfT" value="${STATE.propFirm.profitTargetPct}" class="w-full bg-darkBg border border-darkBorder rounded-xl px-2 py-2 text-xs text-white"></div><div><label class="text-[10px] text-slate-400 block mb-1">Daily %</label><input type="number" id="pfD" value="${STATE.propFirm.dailyLimitPct}" class="w-full bg-darkBg border border-darkBorder rounded-xl px-2 py-2 text-xs text-white"></div><div><label class="text-[10px] text-slate-400 block mb-1">MaxDD %</label><input type="number" id="pfDD" value="${STATE.propFirm.maxDDPct}" class="w-full bg-darkBg border border-darkBorder rounded-xl px-2 py-2 text-xs text-white"></div></div></div>
+        
+        <div class="rounded-3xl bg-darkSurface border border-darkBorder p-5 space-y-3"><h3 class="font-heading font-bold text-xs text-accentGold uppercase">API Keys</h3><div><label class="text-[10px] text-slate-400 block mb-1">TwelveData</label><input type="text" id="sTwelve" value="${STATE.twelveKey}" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-xs text-white"></div><div><label class="text-[10px] text-slate-400 block mb-1">Worker URL</label><input type="text" id="sWorker" value="${STATE.workerUrl}" class="w-full bg-darkBg border border-darkBorder rounded-xl px-3 py-2.5 text-xs text-white"></div></div>
+        <button onclick="saveAll()" class="w-full py-3.5 rounded-2xl bg-accentBlue text-white font-extrabold text-sm">Save All</button>
+        <div class="rounded-3xl bg-darkSurface border border-darkBorder p-5 space-y-3"><h3 class="font-heading font-bold text-xs text-accentRed uppercase">🛡️ Safety & Backup</h3><button onclick="undoLast()" class="w-full py-2.5 rounded-xl bg-darkBg border border-accentGreen/40 text-accentGreen font-bold text-xs">↩️ Undo Last Action</button><div class="grid grid-cols-2 gap-2"><button onclick="exportBackup(false)" class="py-2.5 rounded-xl bg-darkBg border border-accentBlue/40 text-accentBlue font-bold text-xs">📤 Export</button><button onclick="importBackup()" class="py-2.5 rounded-xl bg-darkBg border border-accentGold/40 text-accentGold font-bold text-xs">📥 Import</button></div><button onclick="resetAll()" class="w-full py-2.5 rounded-xl bg-darkBg border border-accentRed/40 text-accentRed font-bold text-xs">⚠️ Reset Everything</button></div></div>`;
+    
+    populateVoices();
+}
+function saveAll() { STATE.riskMode = document.getElementById('sMode').value; STATE.riskPct = parseFloat(document.getElementById('sRisk').value)||1; STATE.manualLot = parseFloat(document.getElementById('sManualLot').value)||0; STATE.defaultRr = parseInt(document.getElementById('sRr').value)||2; STATE.soundMode = document.getElementById('sSound').value; STATE.voiceName = document.getElementById('sVoice').value; STATE.autoPilot = document.getElementById('sAutoPilot').checked; STATE.propFirm.accountSize = parseFloat(document.getElementById('pfS').value)||10000; STATE.propFirm.profitTargetPct = parseFloat(document.getElementById('pfT').value)||10; STATE.propFirm.dailyLimitPct = parseFloat(document.getElementById('pfD').value)||5; STATE.propFirm.maxDDPct = parseFloat(document.getElementById('pfDD').value)||10; STATE.twelveKey = document.getElementById('sTwelve').value.trim(); STATE.workerUrl = document.getElementById('sWorker').value.trim(); saveState(); showToast('Saved!','success'); }
+function resetAll() { confirmAction('FULL RESET?', 'Delete everything? Backups kept.', () => { backupState('Full reset'); const b = localStorage.getItem('dagbo_backups'); localStorage.clear(); if(b) localStorage.setItem('dagbo_backups', b); location.reload(); }); }
+
+function requestNotifPermission() {
+    if (!('Notification' in window)) { showToast('Your phone/browser does not support notifications.', 'error'); return; }
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            showToast('🔔 Phone Notifications Enabled!', 'success');
+            new Notification('DAGBO Connected', { body: 'You will now receive real alerts for trades, news, and price targets.', icon: 'https://cdn-icons-png.flaticon.com/512/2933/2933859.png' });
+        } else { showToast('Permission denied. Check browser settings.', 'error'); }
+    });
+}
+
+function openModal(html) { const o = document.getElementById('modalOverlay'), c = document.getElementById('modalContent'); c.innerHTML = html; o.classList.remove('hidden'); setTimeout(() => { o.classList.remove('opacity-0'); c.classList.add('open'); }, 10); }
+function closeModal() { const o = document.getElementById('modalOverlay'), c = document.getElementById('modalContent'); o.classList.add('opacity-0'); c.classList.remove('open'); setTimeout(() => o.classList.add('hidden'), 300); }
+function openAlertModal() { openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">Set Alert</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div><div><label class="text-[10px] text-slate-400 block mb-1">Pair</label><select id="aP" class="w-full bg-darkBg text-white text-xs px-3 py-2.5 rounded-xl border border-darkBorder">${PAIRS.map(p=>`<option value="${p.symbol}">${p.symbol}</option>`).join('')}</select></div><div><label class="text-[10px] text-slate-400 block mb-1">Condition</label><select id="aC" class="w-full bg-darkBg text-white text-xs px-3 py-2.5 rounded-xl border border-darkBorder"><option value="above">Above</option><option value="below">Below</option></select></div><div><label class="text-[10px] text-slate-400 block mb-1">Target</label><input type="number" id="aT" placeholder="2900" class="w-full bg-darkBg text-white text-xs px-3 py-2.5 rounded-xl border border-darkBorder"></div><button onclick="saveAlert()" class="w-full py-3 rounded-2xl bg-accentBlue text-white font-bold text-xs">Set Alert</button></div>`); }
+function saveAlert() { const sym = document.getElementById('aP').value, cond = document.getElementById('aC').value, tgt = parseFloat(document.getElementById('aT').value); if (!tgt) { showToast('Enter target', 'error'); return; } STATE.alerts.push({ symbol: sym, condition: cond, target: tgt }); saveState(); closeModal(); showToast(`Alert: ${sym} ${cond} $${tgt}`, 'success'); }
+
+function openChart(sym, initialTf = '15M') {
+    let currentTf = initialTf;
+    function renderChartModal() {
+        openModal(`<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-heading font-bold text-sm text-white">${esc(sym)} · ${esc(currentTf)}</h3><button onclick="closeModal()" class="text-xs text-slate-400">✕</button></div><div class="flex space-x-1 bg-darkBg p-1 rounded-xl border border-darkBorder">${['5M','15M','1H','4H','1D'].map(t => `<button onclick="window._changeChartTf('${t}')" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold ${currentTf === t ? 'bg-accentBlue text-white' : 'text-slate-400 hover:text-white'}">${t}</button>`).join('')}</div><div id="chartBox" class="w-full h-72 rounded-2xl bg-darkBg border border-darkBorder flex items-center justify-center text-xs text-slate-400">Loading ${currentTf} Data...</div><div class="flex justify-between text-[9px] text-slate-500 px-1"><span>🔴 SL</span><span>🔵 Entry</span><span>🟢 TP</span><span>🟠 FVG</span></div></div>`);
+        drawRealChart();
+    }
+    window._changeChartTf = (newTf) => { currentTf = newTf; renderChartModal(); };
+    async function drawRealChart() {
+        const box = document.getElementById('chartBox'); if (!box || !window.LightweightCharts) return;
+        box.innerHTML = ''; let data = [];
+        const intervalMap = { '5M': '5min', '15M': '15min', '1H': '1h', '4H': '4h', '1D': '1day' };
+        const binanceMap = { '5M': '5m', '15M': '15m', '1H': '1h', '4H': '4h', '1D': '1d' };
+        const pair = PAIRS.find(p => p.symbol === sym);
+        
+        try {
+            if(sym === 'GOLD' || sym === 'BTC/USD'){
+                const bSym = sym === 'GOLD' ? 'PAXGUSDT' : 'BTCUSDT';
+                const d = await fetch(`https://api.binance.com/api/v3/klines?symbol=${bSym}&interval=${binanceMap[currentTf] || '15m'}&limit=50`).then(r=>r.json());
+                data = d.map(k => ({ time: k[0]/1000, open: +k[1], high: +k[2], low: +k[3], close: +k[4] }));
+            } else {
+                const r = await fetch(`https://api.twelvedata.com/time_series?symbol=${pair.td}&interval=${intervalMap[currentTf] || '15min'}&outputsize=50&apikey=${STATE.twelveKey}`);
+                const json = await r.json();
+                if (json.status === "error" || !json.values) throw new Error("API Error");
+                data = json.values.map(v => ({ time: new Date(v.datetime).getTime() / 1000, open: parseFloat(v.open), high: parseFloat(v.high), low: parseFloat(v.low), close: parseFloat(v.close) })).reverse();
+            }
+        } catch(e) {
+            const base = STATE.marketData[sym]?.price || 100; let p = base; const tfSecs = { '5M': 300, '15M': 900, '1H': 3600, '4H': 14400, '1D': 86400 }[currentTf] || 900; let time = Math.floor(Date.now() / 1000) - (tfSecs * 50);
+            for (let i = 0; i < 50; i++) { const o = p + (Math.random() - 0.5) * base * 0.005; const c = o + (Math.random() - 0.48) * base * 0.006; data.push({ time: time, open: o, high: Math.max(o, c) + Math.random() * base * 0.002, low: Math.min(o, c) - Math.random() * base * 0.002, close: c }); p = c; time += tfSecs; }
+        }
+
+        const chart = LightweightCharts.createChart(box, { layout: { background: { type: 'solid', color: '#0A0E17' }, textColor: '#94A3B8' }, grid: { vertLines: { color: '#1E293B' }, horzLines: { color: '#1E293B' } }, rightPriceScale: { borderColor: '#1E293B' }, timeScale: { borderColor: '#1E293B', timeVisible: true } });
+        const s = chart.addCandlestickSeries({ upColor: '#10B981', downColor: '#EF4444', borderVisible: false, wickUpColor: '#10B981', wickDownColor: '#EF4444' });
+        s.setData(data); chart.timeScale().fitContent();
+
+        const openTrade = STATE.trades.find(t => t.status === 'OPEN' && t.symbol === sym);
+        if (openTrade) {
+            s.createPriceLine({ price: openTrade.entry, color: '#3B82F6', lineWidth: 2, lineStyle: 0, axisLabelVisible: true, title: 'ENTRY' });
+            s.createPriceLine({ price: openTrade.sl, color: '#EF4444', lineWidth: 2, lineStyle: 2, axisLabelVisible: true, title: 'SL' });
+            s.createPriceLine({ price: openTrade.tp, color: '#10B981', lineWidth: 2, lineStyle: 2, axisLabelVisible: true, title: 'TP' });
+        }
+
+        for (let i = 1; i < data.length - 1; i++) {
+            const prev = data[i-1], next = data[i+1];
+            if (prev.high < next.low) {
+                s.createPriceLine({ price: prev.high, color: 'rgba(16, 185, 129, 0.4)', lineWidth: 1, lineStyle: 3, axisLabelVisible: false, title: 'FVG' });
+                s.createPriceLine({ price: next.low, color: 'rgba(16, 185, 129, 0.4)', lineWidth: 1, lineStyle: 3, axisLabelVisible: false, title: 'FVG' });
+            }
+            if (prev.low > next.high) {
+                s.createPriceLine({ price: prev.low, color: 'rgba(239, 68, 68, 0.4)', lineWidth: 1, lineStyle: 3, axisLabelVisible: false, title: 'FVG' });
+                s.createPriceLine({ price: next.high, color: 'rgba(239, 68, 68, 0.4)', lineWidth: 1, lineStyle: 3, axisLabelVisible: false, title: 'FVG' });
+            }
+        }
+    }
+    renderChartModal();
+}
+
+router.navigate('home');
+checkOnboarding();
+</script>
+</body>
+</html>
